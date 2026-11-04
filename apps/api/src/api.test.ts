@@ -87,11 +87,14 @@ d('API', () => {
     expect((await app.inject({ url: '/v1/me' })).statusCode).toBe(401);
   });
 
-  it('refresh tokens rotate; reusing an old one revokes the chain', async () => {
+  it('refresh tokens rotate; a near-simultaneous reuse (two tabs) is allowed, a late reuse revokes the chain', async () => {
     const r1 = (
       await app.inject({ method: 'POST', url: '/v1/auth/refresh', payload: { refreshToken: A.refreshToken } })
     ).json();
     expect(r1.refreshToken).toBeTruthy();
+    const twin = await app.inject({ method: 'POST', url: '/v1/auth/refresh', payload: { refreshToken: A.refreshToken } });
+    expect(twin.statusCode).toBe(200);
+    await pool.query(`UPDATE refresh_tokens SET rotated_at = now() - interval '5 minutes' WHERE rotated_at IS NOT NULL`);
     const reuse = await app.inject({
       method: 'POST',
       url: '/v1/auth/refresh',

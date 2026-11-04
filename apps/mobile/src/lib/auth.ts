@@ -2,18 +2,35 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 
-/** JWT + refresh token live in SecureStore only (SPEC §13). Web dev fallback: sessionStorage. */
+/**
+ * JWT + refresh token live in SecureStore on iOS/Android (SPEC §13). On the web (beta PWA) they live in
+ * localStorage so parents stay signed in across app restarts; the refresh token rotates on use.
+ */
 const KEY = 'escola.auth';
 
 const storage = {
   async get() {
-    if (Platform.OS === 'web') return globalThis.sessionStorage?.getItem(KEY) ?? null;
+    if (Platform.OS === 'web') {
+      try {
+        // One-time move from the old per-tab storage.
+        const old = globalThis.sessionStorage?.getItem(KEY);
+        if (old && !globalThis.localStorage?.getItem(KEY)) globalThis.localStorage?.setItem(KEY, old);
+        return globalThis.localStorage?.getItem(KEY) ?? null;
+      } catch {
+        return null;
+      }
+    }
     return SecureStore.getItemAsync(KEY);
   },
   async set(v: string | null) {
     if (Platform.OS === 'web') {
-      if (v) globalThis.sessionStorage?.setItem(KEY, v);
-      else globalThis.sessionStorage?.removeItem(KEY);
+      try {
+        if (v) globalThis.localStorage?.setItem(KEY, v);
+        else globalThis.localStorage?.removeItem(KEY);
+        globalThis.sessionStorage?.removeItem(KEY);
+      } catch {
+        /* private mode: stays signed in for this session only */
+      }
       return;
     }
     if (v) await SecureStore.setItemAsync(KEY, v);

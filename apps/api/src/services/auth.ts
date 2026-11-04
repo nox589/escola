@@ -5,7 +5,9 @@ import { and, drizzle, eq, isNull, schema, withFamily, type Db } from '@escola/d
 import type { OAuthVerifier } from '../context.js';
 
 export const ACCESS_TTL_S = 15 * 60;
-export const REFRESH_TTL_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30);
+export const REFRESH_TTL_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 90);
+/** Two tabs (or a retry) may present the same token at once; that is not theft. */
+export const REFRESH_REUSE_GRACE_MS = 60_000;
 export const MAGIC_TTL_MS = 15 * 60_000;
 
 export const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
@@ -73,6 +75,9 @@ export async function rotateRefresh(pool: pg.Pool, secret: string, presented: st
       .from(schema.refreshTokens)
       .where(eq(schema.refreshTokens.tokenHash, hashToken(presented)));
     if (!row || row.revokedAt || row.expiresAt < new Date()) return { error: 'invalid' as const };
+    if (row.rotatedAt && Date.now() - row.rotatedAt.getTime() < REFRESH_REUSE_GRACE_MS) {
+      return { userId: row.userId, chainId: row.chainId };
+    }
     if (row.rotatedAt) {
       await db
         .update(schema.refreshTokens)
