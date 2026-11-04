@@ -1,0 +1,11 @@
+{
+  "captured": "2026-11-04, human-run session (Andrew), structure only",
+  "page": "https://www3.caib.es/xestibback/families/calendariEscolar",
+  "loader": { "form": "form#formCalendariEscolar_<id>", "method": "post", "action": "calendari/calendariCentre", "target": "iframe.calendari-iframe", "fields": ["codiCentre (8 chars)", "codiMatr (20 chars)", "idioma (2 chars)"] },
+  "iframe_page": "/xestibback/families/calendari/calendariCentre (same origin, bootstrap-year-calendar style)",
+  "months": "12 x div.month-container > table; month name in th.month-title",
+  "day_cells": "td.day (+ .old/.new = days of adjacent months, skip). Day number is the cell text; date = month-title + day.",
+  "day_types": { "vacances": "holidays", "festiu": "public holiday", "festiuLocal": "local holiday", "noLectiu": "non-teaching day", "lliureDisposicio": "school free-choice day" },
+  "legend": "span.llegenda-item.<type>",
+  "note": "Calendar is the school's term calendar (holidays), not per-child deadlines. Deadlines come from messages/circulars/authorisations."
+}
