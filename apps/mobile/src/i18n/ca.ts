@@ -110,6 +110,7 @@ export const ca: Strings = {
   },
   welcome: {
     tagline: "Els missatges de l'escola, en el teu idioma",
+    subtitle: 'Tot el de l\'escola, ordenat i traduït.',
     language: 'Idioma',
     continue: 'Continua',
     disclaimer: 'Sense relació amb el Govern de les Illes Balears.',

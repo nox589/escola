@@ -110,6 +110,7 @@ export const fr: Strings = {
   },
   welcome: {
     tagline: "Les messages de l'école, dans votre langue",
+    subtitle: 'Tout ce qui vient de l\'école, trié et traduit.',
     language: 'Langue',
     continue: 'Continuer',
     disclaimer: 'Sans lien avec le Govern de les Illes Balears.',

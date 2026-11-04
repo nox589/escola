@@ -108,6 +108,7 @@ export const en = {
   },
   welcome: {
     tagline: 'School messages, in your language',
+    subtitle: 'Everything from school, sorted and translated.',
     language: 'Language',
     continue: 'Continue',
     disclaimer: 'Not affiliated with the Govern de les Illes Balears.',

@@ -110,6 +110,7 @@ export const es: Strings = {
   },
   welcome: {
     tagline: 'Los mensajes del cole, en tu idioma',
+    subtitle: 'Todo lo del cole, ordenado y traducido.',
     language: 'Idioma',
     continue: 'Continuar',
     disclaimer: 'Sin relación con el Govern de les Illes Balears.',

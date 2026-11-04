@@ -110,6 +110,7 @@ export const de: Strings = {
   },
   welcome: {
     tagline: 'Nachrichten der Schule, in deiner Sprache',
+    subtitle: 'Alles von der Schule, sortiert und übersetzt.',
     language: 'Sprache',
     continue: 'Weiter',
     disclaimer: 'Keine Verbindung zum Govern de les Illes Balears.',
