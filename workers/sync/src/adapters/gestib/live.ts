@@ -126,8 +126,9 @@ export function createGestibLiveAdapter(): PortalAdapter {
       seen.add(name);
       out.push({ ref, displayName: name });
     }
-    // Single-child accounts may have no switcher; the selected card is then the only child.
-    if (current && !seen.has(current)) out.unshift({ ref: currentRef, displayName: current });
+    // The switcher chips list every child (the selected one included, under a shorter label than
+    // the card). Only an account with no chips at all falls back to the selected card.
+    if (!out.length && current) out.push({ ref: currentRef, displayName: current });
     if (!out.length) throw new ParserDriftError('no children found on home');
     return out;
   }

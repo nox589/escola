@@ -26,7 +26,7 @@ function system(locale: string, today: string) {
   return `You are the assistant inside Escola, an app that helps parents follow their children's school messages from GestIB (Balearic Islands). Today is ${today} (Europe/Madrid).
 
 Answer in ${LANG[locale] ?? 'English'}, briefly and concretely.
-Use ONLY the <items>, <open_actions>, <calendar> and <kb> provided. If the answer is not there, say you don't know and suggest checking the original message or asking the school. Never invent dates, amounts or names.
+Use ONLY the <today>, <recent_updates>, <items>, <open_actions>, <calendar> and <kb> provided. <calendar> includes school holidays and non-teaching days ("Family" entries) for the next six months, plus trips, events and deadlines. "This week" means Monday to Sunday of the week containing <today>. For "what's due" questions, list every open action with its deadline, soonest first. If the answer is genuinely not there, say so plainly and suggest checking the original message or asking the school. Never invent dates, amounts or names.
 When you use an item, cite it as [item:<id>] right after the claim.
 You cannot send anything to the school. If the parent wants to reply, justify an absence or answer an authorisation, tell them to use the "Reply" or action button on that item, which shows them exactly what will be sent before anything goes out.`;
 }
@@ -164,21 +164,67 @@ export async function assistantRoutes(app: FastifyInstance, deps: AppDeps) {
         .where(
           and(
             gte(schema.calendarEntries.startsAt, new Date(now.getTime() - 86400_000)),
-            lte(schema.calendarEntries.startsAt, new Date(now.getTime() + 14 * 86400_000)),
+            lte(schema.calendarEntries.startsAt, new Date(now.getTime() + 200 * 86400_000)),
           ),
         );
+      // Everything recent, as translated summaries, so "what's new / due this week" is answerable.
+      const recentItems = await db
+        .select({
+          id: schema.items.id,
+          section: schema.items.section,
+          postedAt: schema.items.postedAt,
+          origTitle: schema.items.originalTitle,
+          title: schema.itemTranslations.title,
+          summary: schema.itemTranslations.summary,
+          child: schema.children.displayName,
+        })
+        .from(schema.items)
+        .leftJoin(
+          schema.itemTranslations,
+          and(eq(schema.itemTranslations.itemId, schema.items.id), eq(schema.itemTranslations.lang, user!.locale ?? 'en')),
+        )
+        .leftJoin(schema.children, eq(schema.children.id, schema.items.childId))
+        .orderBy(desc(schema.items.postedAt))
+        .limit(40);
       return {
+        recentItems,
         history: history.reverse(),
         hits,
         meta,
         open,
         cal,
-        validIds: new Set(itemIds.concat(open.map((o) => o.itemId))),
+        validIds: new Set(itemIds.concat(open.map((o) => o.itemId), recentItems.map((r) => r.id))),
       };
     });
 
     const metaById = new Map(ctx.meta.map((m) => [m.id, m]));
-    const context = `<items>
+    const day = (d: Date) => d.toISOString().slice(0, 10);
+    // Collapse runs of identical all-day school entries (holidays) into ranges.
+    const calLines: string[] = [];
+    const sortedCal = [...ctx.cal].sort((a, b) => a.at.getTime() - b.at.getTime());
+    for (let i = 0; i < sortedCal.length; i++) {
+      const c = sortedCal[i]!;
+      const label = `${c.child ?? 'Family'}: ${c.title ?? c.orig}`;
+      let j = i;
+      while (
+        !c.itemId &&
+        j + 1 < sortedCal.length &&
+        !sortedCal[j + 1]!.itemId &&
+        (sortedCal[j + 1]!.title ?? sortedCal[j + 1]!.orig) === (c.title ?? c.orig) &&
+        sortedCal[j + 1]!.at.getTime() - sortedCal[j]!.at.getTime() <= 3 * 86400_000
+      )
+        j++;
+      calLines.push(
+        `- ${day(c.at)}${j > i ? ` to ${day(sortedCal[j]!.at)}` : ''} ${label}${c.itemId ? ` [item:${c.itemId}]` : ''}`,
+      );
+      i = j;
+    }
+    const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Europe/Madrid' }).format(now);
+    const context = `<today>${weekday} ${day(now)} (Europe/Madrid)</today>
+<recent_updates>
+${ctx.recentItems.map((r) => `- [item:${r.id}] ${r.postedAt ? day(r.postedAt) : ''} ${r.section} ${r.child ?? 'Family'}: ${r.title ?? r.origTitle}${r.summary ? `. ${r.summary}` : ''}`).join('\n') || '(none)'}
+</recent_updates>
+<items>
 ${ctx.hits
   .map((h) => {
     const m = metaById.get(h.itemId);
@@ -190,7 +236,7 @@ ${ctx.hits
 ${ctx.open.map((o) => `- [item:${o.itemId}] ${o.child ?? ''}: ${o.kind} "${o.title}"${o.deadlineAt ? ` due ${o.deadlineAt.toISOString().slice(0, 10)}` : ''}`).join('\n') || '(none)'}
 </open_actions>
 <calendar>
-${ctx.cal.map((c) => `- ${c.at.toISOString().slice(0, 10)} ${c.child ?? ''}: ${c.title ?? c.orig}${c.itemId ? ` [item:${c.itemId}]` : ''}`).join('\n') || '(nothing in the next two weeks)'}
+${calLines.join('\n') || '(nothing in the next six months)'}
 </calendar>
 <kb>
 ${SCHOOL_KB}

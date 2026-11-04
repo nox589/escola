@@ -1,7 +1,7 @@
 import type pg from 'pg';
 import type { Browser } from 'playwright';
 import type { KmsUnwrapper, KmsWrapper } from '@escola/crypto';
-import { eq, schema, withFamily } from '@escola/db';
+import { and, eq, isNull, schema, withFamily } from '@escola/db';
 import type { Embedder, LlmProvider } from '@escola/llm';
 import type { BlobStore } from '@escola/storage';
 import { SelectorNotDiscoveredError } from '../adapters/errors.js';
@@ -129,6 +129,17 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
           .set({ lastSyncAt: new Date(), lastErrorCode: report.errors.length ? 'PARSER_DRIFT' : null })
           .where(eq(schema.portalAccounts.id, portalAccountId)),
       );
+      // Items left without a processed version (e.g. after a duplicate child was removed): re-process.
+      const unprocessed = await withFamily(pool, familyId, (db) =>
+        db
+          .select({ id: schema.items.id })
+          .from(schema.items)
+          .where(and(eq(schema.items.portalAccountId, portalAccountId), isNull(schema.items.enrichedHash))),
+      );
+      const savedIds = new Set(report.saved.map((s) => s.itemId));
+      const extra = unprocessed.map((r) => r.id).filter((x) => !savedIds.has(x));
+      for (let i = 0; i < extra.length; i += 10)
+        await d.enqueue.enrich({ familyId, itemIds: extra.slice(i, i + 10), notifyIds: [], backfill: false });
       if (report.saved.length)
         await d.enqueue.enrich({
           familyId,

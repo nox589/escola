@@ -17,6 +17,8 @@ export interface ItemStore {
     results: SyncedDiff[],
     attachments: StoredAttachment[],
   ): Promise<SavedItem[]>;
+  /** Removes children the portal no longer lists, keeping their items as family-wide. */
+  pruneChildren?(accountId: string, keepRefs: string[]): Promise<number>;
   /** Replaces the school-calendar entries (holidays etc.) for this account. */
   saveSchoolCalendar?(accountId: string, days: SchoolDay[]): Promise<void>;
 }
@@ -136,6 +138,7 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
     const page = session.page;
 
     report.children = await o.adapter.listChildren(page);
+    if (report.children.length) await o.items.pruneChildren?.(o.accountId, report.children.map((c) => c.ref));
     const known = await o.items.known(o.accountId);
     // Account-wide sections (e.g. messages) are read once, not once per child.
     const accountDone = new Set<string>();

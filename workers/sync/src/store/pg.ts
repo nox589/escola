@@ -114,6 +114,24 @@ export class PgItemStore implements ItemStore {
     });
   }
 
+  async pruneChildren(accountId: string, keepRefs: string[]): Promise<number> {
+    return withFamily(this.pool, this.familyId, async (db) => {
+      const stale = (
+        await db
+          .select({ id: schema.children.id, ref: schema.children.portalChildRef })
+          .from(schema.children)
+          .where(eq(schema.children.portalAccountId, accountId))
+      ).filter((c) => !keepRefs.includes(c.ref));
+      for (const c of stale) {
+        // Items and calendar entries survive as family-wide; re-attribution happens on enrichment.
+        await db.update(schema.items).set({ childId: null, enrichedHash: null }).where(eq(schema.items.childId, c.id));
+        await db.update(schema.calendarEntries).set({ childId: null }).where(eq(schema.calendarEntries.childId, c.id));
+        await db.delete(schema.children).where(eq(schema.children.id, c.id));
+      }
+      return stale.length;
+    });
+  }
+
   /** School term calendar: replaced wholesale on every sync (kind 'school', no item). */
   async saveSchoolCalendar(_accountId: string, days: SchoolDay[]): Promise<void> {
     const label: Record<SchoolDay['type'], [string, string]> = {
