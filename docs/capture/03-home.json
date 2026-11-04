@@ -1,0 +1,13 @@
+{
+  "captured": "2026-11-04, human-run session (Andrew), structure only; values shown as shapes",
+  "login_entry": "https://www3.caib.es/xestibback/ (then idp.caib.es two-step); /xestibback/families/ alone returns 404",
+  "home": "https://www3.caib.es/xestibback/families/home",
+  "app": "server-rendered pages (AngularJS + jQuery, AdminLTE). No JSON feeds seen on home load.",
+  "selected_child": { "card": "dd > div.alumno-seleccionado-card", "photo": "img.img-circle (src /xestibback/families/foto/<36-char id>)", "id": "input#codiFillSeleccionat (36 chars)", "birthdate": "input#dataNaixFillSeleccionat (dd/mm/yyyy)" },
+  "other_children": { "chip": "form > button.alumno-chip (onclick submits form)", "form": "POST to current URL, field idFill (36 chars)", "name": "span inside button.alumno-chip" },
+  "tutor": "input#dniTutor (hidden)",
+  "counters": { "messages": "span#numMissatgeMenu", "circulars": "span#numCircularMenu", "pending_authorisations": "span#numAutoritzacionsPendents" },
+  "menu": ["home","missatges","circulars","autoritzacions","calendariEscolar","horari","assistencia","activitats","taulerAnuncis","notificacions","qualificacions","notesParcials","documentsCentre","reunions","configuracio"],
+  "modals": ["#modal-warning","#modal-error","#modal-confirm","#modal-prompt","#modalLogins"],
+  "language_form": "form#canviIdioma (select #canviIdioma_idioma)"
+}
