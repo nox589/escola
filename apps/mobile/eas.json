@@ -4,16 +4,16 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://escola-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://escola-api-n7w5.onrender.com" }
     },
     "beta": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://escola-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://escola-api-n7w5.onrender.com" }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://escola-api.onrender.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://escola-api-n7w5.onrender.com" }
     }
   },
   "submit": { "production": {} }
