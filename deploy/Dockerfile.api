@@ -1,0 +1,16 @@
+# API service (Fastify). Build from the repo root:
+#   docker build -f deploy/Dockerfile.api -t escola-api .
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable
+COPY . .
+RUN pnpm install --frozen-lockfile --filter @escola/api... \
+ && pnpm --filter @escola/api... build
+
+FROM node:20-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app /app
+EXPOSE 3000
+# Migrations run on every start; they are idempotent.
+CMD ["sh", "-c", "node packages/db/dist/cli.js up && node apps/api/dist/server.js"]

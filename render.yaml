@@ -1,0 +1,76 @@
+# Render Blueprint: everything in Frankfurt (EU). Secrets marked sync:false are entered once in the dashboard.
+databases:
+  - name: escola-db
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: '16'
+    databaseName: escola
+    ipAllowList: []
+
+services:
+  - type: keyvalue
+    name: escola-redis
+    region: frankfurt
+    plan: starter
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  - type: web
+    name: escola-api
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./deploy/Dockerfile.api
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: escola-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: escola-redis, property: connectionString }
+      - { key: JWT_SECRET, generateValue: true }
+      - { key: KMS_PROVIDER, value: local }
+      - { key: LOCAL_KMS_KEY, sync: false }
+      - { key: LLM_PROVIDER, value: fake }
+      - { key: APP_URL, sync: false }
+      - { key: PUBLIC_API_URL, sync: false }
+      - { key: EMAIL_PROVIDER, value: console }
+      - { key: EMAIL_API_KEY, sync: false }
+      - { key: EMAIL_FROM, sync: false }
+      - { key: ADMIN_TOKEN, generateValue: true }
+      - { key: ALLOW_REAL_PORTAL, value: 'true' }
+      - { key: ENABLED_WRITERS, value: '' }
+      - { key: S3_BUCKET, sync: false }
+      - { key: S3_REGION, value: eu-south-2 }
+
+  - type: worker
+    name: escola-worker
+    runtime: docker
+    region: frankfurt
+    plan: standard
+    dockerfilePath: ./deploy/Dockerfile.worker
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: escola-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: escola-redis, property: connectionString }
+      - { key: KMS_PROVIDER, value: local }
+      - { key: LOCAL_KMS_KEY, sync: false }
+      - { key: LLM_PROVIDER, value: fake }
+      - { key: ALLOW_REAL_PORTAL, value: 'true' }
+      - { key: ENABLED_WRITERS, value: '' }
+      - { key: SYNC_CONCURRENCY, value: '2' }
+      - { key: SYNC_LOGIN_RATE_PER_MIN, value: '2' }
+      - { key: EXPO_ACCESS_TOKEN, sync: false }
+      - { key: S3_BUCKET, sync: false }
+      - { key: S3_REGION, value: eu-south-2 }
+
+  - type: web
+    name: escola-web
+    runtime: static
+    region: frankfurt
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @escola/mobile... && cd apps/mobile && npx expo export --platform web --output-dir dist
+    staticPublishPath: apps/mobile/dist
+    routes:
+      - { type: rewrite, source: /*, destination: /index.html }
+    envVars:
+      - { key: EXPO_PUBLIC_API_URL, sync: false }

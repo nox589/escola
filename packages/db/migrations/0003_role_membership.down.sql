@@ -1,0 +1,2 @@
+REVOKE escola_admin FROM CURRENT_USER;
+REVOKE escola_app FROM CURRENT_USER;

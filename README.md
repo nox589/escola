@@ -46,6 +46,11 @@ Open http://localhost:8081, sign in with any email (the magic link is printed in
 and link GestIB with the mock login `parent1` / `escola123`. On a phone: `pnpm --filter @escola/mobile start`
 and open it in Expo Go (set `EXPO_PUBLIC_API_URL` to your machine's IP).
 
+## Deploy (beta)
+- **Backend + web app:** `render.yaml` is a Render Blueprint (Frankfurt): Postgres 16 + pgvector, Redis, API, worker (Docker with Chromium), and the web build of the app. Connect the GitHub repo in Render, fill the `sync: false` secrets once (`LOCAL_KMS_KEY`, `APP_URL`, `PUBLIC_API_URL`, `EXPO_PUBLIC_API_URL`), deploy.
+- **Phone builds:** `apps/mobile/eas.json`: `beta` profile gives an Android APK to share directly and an iOS internal build (TestFlight needs the Apple Developer account).
+- Migrations run on every API start and work on a managed, non-superuser Postgres (tested).
+
 ## What is left before real parents can use it
 1. **Capture GestIB pages (you, about 30 minutes).** Follow `docs/SELECTOR_DISCOVERY.md`. Then real selectors get written and the read-only canary runs against your account. Replying stays switched off until it is verified on a real account.
 2. **Choose EU vendors** (`docs/OPEN_QUESTIONS.md` #16): hosting, KMS (only a local dev KMS exists), Bedrock region and model IDs, email.
