@@ -1,0 +1,9 @@
+{
+  "captured": "2026-11-04, human-run session (Andrew), structure only",
+  "url": "https://idp.caib.es/passwordLoginForm",
+  "entry": "https://www3.caib.es/xestibback/families/ redirects here",
+  "form": { "id": "form-pass", "method": "post", "action": "/userNameAction" },
+  "username": "#j_username",
+  "submit": "#loginpassbutton",
+  "other": ["certificate login form (#logincertbutton, action https://idp.caib.es:444/certificateLoginAction)", "cancel form (action /cancelAction)"]
+}
