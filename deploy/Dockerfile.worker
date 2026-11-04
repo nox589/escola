@@ -3,7 +3,7 @@
 # The Playwright base image ships the Chromium build matching playwright@1.64.1.
 FROM mcr.microsoft.com/playwright:v1.64.1-noble AS build
 WORKDIR /app
-RUN corepack enable
+RUN npm install -g pnpm@10.28.0
 COPY . .
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN pnpm install --frozen-lockfile --filter @escola/sync-worker... \
