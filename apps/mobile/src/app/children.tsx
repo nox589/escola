@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { Banner, Button, Card, H1, P, Row, Screen } from '@/components/ui';
 import { api, type Child, type PortalAccount } from '@/lib/api';
 import { CHILD_COLOURS, font, space, useTheme } from '@/lib/theme';
@@ -26,6 +26,15 @@ export default function Children() {
   const problem = accounts.data?.find((a) => a.status !== 'active' && a.status !== 'paused');
   // Wait for the first sync to finish so every child is listed before continuing.
   const synced = !!accounts.data?.some((a) => a.lastSyncAt);
+  // The worker sets this when the real GestIB login steps have not been captured yet.
+  const notReady = !synced && !!accounts.data?.some((a) => a.lastErrorCode === 'GESTIB_NOT_READY');
+  const [waited, setWaited] = useState(0);
+  useEffect(() => {
+    if (synced || notReady) return;
+    const t0 = Date.now();
+    const id = setInterval(() => setWaited(Math.floor((Date.now() - t0) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [synced, notReady]);
 
   const save = async () => {
     for (const [i, k] of (kids.data ?? []).entries()) {
@@ -54,9 +63,23 @@ export default function Children() {
           }}
         />
       ) : null}
-      {!kids.data?.length ? (
+      {notReady && !kids.data?.length ? (
         <Card>
-          <P muted>{t('children.waiting')}</P>
+          <P>{t('children.notReadyTitle')}</P>
+          <P muted small>
+            {t('children.notReadyBody')}
+          </P>
+        </Card>
+      ) : !kids.data?.length ? (
+        <Card>
+          <Row>
+            <ActivityIndicator color={c.accent} />
+            <P muted>{t('children.waiting')}</P>
+          </Row>
+          <P muted small>
+            {waited < 90 ? t('children.waitingHint') : t('children.slow')}
+            {waited > 0 ? `  ${Math.floor(waited / 60)}:${String(waited % 60).padStart(2, '0')}` : ''}
+          </P>
         </Card>
       ) : (
         kids.data.map((k, i) => {
@@ -103,12 +126,16 @@ export default function Children() {
         })
       )}
       <View style={{ flex: 1 }} />
-      <Button
-        title={t('children.continue')}
-        onPress={save}
-        disabled={!kids.data?.length || !synced}
-        loading={!!kids.data?.length && !synced}
-      />
+      {(notReady || waited >= 90) && !kids.data?.length ? (
+        <Button title={t('children.skip')} onPress={() => router.replace('/notifications')} />
+      ) : (
+        <Button
+          title={t('children.continue')}
+          onPress={save}
+          disabled={!kids.data?.length || !synced}
+          loading={!!kids.data?.length && !synced}
+        />
+      )}
     </Screen>
   );
 }

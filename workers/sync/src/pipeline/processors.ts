@@ -147,6 +147,7 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
         })
         .where(eq(schema.syncRuns.id, run!.id)),
     );
+    log.info({ portalAccountId, result }, 'sync finished');
     return { result };
   } catch (e) {
     result = e instanceof SelectorNotDiscoveredError ? 'selectors_not_discovered' : 'error';
@@ -156,7 +157,20 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
         .set({ finishedAt: new Date(), result, sections: { error: e instanceof Error ? e.name : 'unknown' } })
         .where(eq(schema.syncRuns.id, run!.id)),
     );
-    if (result === 'error') throw e;
+    if (result === 'selectors_not_discovered') {
+      // Nothing was sent to GestIB. Tell the app so it stops waiting (shown as "not ready yet").
+      await withFamily(pool, familyId, (db) =>
+        db
+          .update(schema.portalAccounts)
+          .set({ lastErrorCode: 'GESTIB_NOT_READY' })
+          .where(eq(schema.portalAccounts.id, portalAccountId)),
+      );
+      log.warn({ portalAccountId, result }, 'sync skipped: GestIB selectors not captured yet');
+    }
+    if (result === 'error') {
+      log.error({ portalAccountId, err: e instanceof Error ? e.name : 'unknown' }, 'sync failed');
+      throw e;
+    }
     return { result };
   }
 }

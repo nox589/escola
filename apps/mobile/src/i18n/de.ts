@@ -59,6 +59,11 @@ export const de: Strings = {
   children: {
     title: 'Deine Kinder',
     waiting: 'Hole deine Kinder aus GestIB…',
+    waitingHint: "Das dauert meist unter einer Minute. Lass diesen Bildschirm offen.",
+    slow: "Das dauert länger als üblich. Wir versuchen es im Hintergrund weiter.",
+    notReadyTitle: "Escola kann GestIB noch nicht lesen",
+    notReadyBody: "Wir stellen die Verbindung zu GestIB für die Beta noch fertig. Deine Zugangsdaten sind sicher gespeichert und es wurde nichts an die Schule gesendet. Wir sagen dir Bescheid, sobald deine Kinder erscheinen.",
+    skip: "Vorerst weiter",
     rename: 'Name in der App',
     continue: 'Weiter',
   },

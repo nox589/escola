@@ -59,6 +59,11 @@ export const ca: Strings = {
   children: {
     title: 'Els teus fills',
     waiting: 'Cercant els teus fills a GestIB…',
+    waitingHint: "Sol trigar menys d'un minut. Mantén aquesta pantalla oberta.",
+    slow: "Està trigant més del normal. Continuarem provant-ho en segon pla.",
+    notReadyTitle: "Escola encara no pot llegir GestIB",
+    notReadyBody: "Encara estem acabant la connexió amb GestIB per a la beta. Les teves dades d'accés estan desades de manera segura i no s'ha enviat res a l'escola. T'avisarem tan bon punt apareguin els teus fills.",
+    skip: "Continua de moment",
     rename: "Nom a l'app",
     continue: 'Continua',
   },

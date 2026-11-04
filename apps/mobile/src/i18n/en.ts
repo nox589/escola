@@ -57,6 +57,11 @@ export const en = {
   children: {
     title: 'Your children',
     waiting: 'Fetching your children from GestIB…',
+    waitingHint: "This usually takes under a minute. Keep this screen open.",
+    slow: "This is taking longer than usual. We'll keep trying in the background.",
+    notReadyTitle: "Escola can't read GestIB yet",
+    notReadyBody: "We're still finishing the connection to GestIB for the beta. Your login is stored safely and nothing has been sent to the school. We'll let you know as soon as your children appear.",
+    skip: "Continue for now",
     rename: 'Name shown in the app',
     continue: 'Continue',
   },
