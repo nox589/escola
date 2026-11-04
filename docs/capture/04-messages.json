@@ -1,0 +1,11 @@
+{
+  "captured": "2026-11-04, human-run session (Andrew), field names and types only",
+  "page": "https://www3.caib.es/xestibback/families/missatges",
+  "feeds": {
+    "summary": { "method": "POST", "url": "/xestibback/families/missatges/resumMissatgesXUsuari.json", "content_type": "application/x-www-form-urlencoded;charset=utf-8", "body": "llistaEtiquetesFiltre (optional; empty body works)", "response": { "llistatCodisMissatge": "number[]", "totalMissatges": "number", "totalMissatgesNoLlegits": "number" } },
+    "messages": { "method": "POST", "url": "/xestibback/families/missatges/llistaMissatgesXCodi.json", "content_type": "application/x-www-form-urlencoded;charset=utf-8", "body": "codisMissatges=<codes from summary> (serialised with AngularJS $httpParamSerializer)", "response_item": { "codi": "number", "assumpte": "string (subject)", "texte": "string (HTML body)", "texteDescriptiu": "string (preview)", "remitent": "string (sender)", "codiPersonaRemitent": "string(36)", "data": "number (epoch ms)", "dataInici": "number", "dataFi": "null|number", "llegit": "boolean", "teDocumentAdjunt": "boolean", "codiDocument": "null|number", "permetResposta": "boolean", "pendentEnviar": "boolean", "llistaEtiquetes": "array" } },
+    "attachment_info": "/xestibback/personal/usuari/carregaCodiDocumentMissatge.json (not yet exercised)"
+  },
+  "side_effects_never_call": ["marcaMissatgeLlegit (marks read)", "esborraMissatge / borrarMissatgesRebuts (delete)", "enviaResposta / enviaMissatge (send)"],
+  "note": "Reading the list does not mark messages read. Factory constants use CONTEXT_PATH + /personal/usuari/...; resolveUrl() maps them to /families/missatges/... on this page."
+}
