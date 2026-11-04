@@ -1,0 +1,14 @@
+{
+  "captured": "2026-11-04, human-run session (Andrew), structure only. No pending authorisation existed, so the sign/accept form is NOT captured yet.",
+  "page": "https://www3.caib.es/xestibback/families/autoritzacions",
+  "rendering": "server-rendered HTML inside div[ng-controller='AutoritzacionsController as autoritzacionsController']",
+  "empty_state": "div.callout.callout-warning",
+  "item": {
+    "box": "div#autoritzacio_<32-char id>.box.box-primary",
+    "title_link": "h4.box-title > a[href='#collapse_<id>'] > span.text-green (status colour class; text = date - child - activity)",
+    "body": "div#collapse_<id>.panel-collapse.collapse > span > b (status label), div.text-enriquit (rich text)",
+    "attachment": "autoritzacions/veureDocumentAdjunt.do"
+  },
+  "side_effects_never_call": ["autoritzacionsController.marcaAutoritzacioLlegida(id) fires when an item is expanded", "autoritzacionsController.enviaForm (submit)"],
+  "todo": "Capture the pending-authorisation form the next time one exists (structure only)."
+}
