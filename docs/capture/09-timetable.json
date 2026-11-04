@@ -1,0 +1,5 @@
+{
+  "captured": "2026-11-04 21:10, read-only, structure only",
+  "page": "https://www3.caib.es/xestibback/families/horari (script horari.js)",
+  "feed": { "method": "POST form-urlencoded", "url": "/xestibback/families/llistes/alumnat/quadrantHorariAlumnes.json", "body": "codiMatricula=<matricula>&idioma=<ca|es>", "matricula_source": "inline call mostraHorariAlumne('<matricula>', '<codiCentre>', '<codiGrup>', '<any>') on the page (one per child)", "response": "[ { codiPersona, nomAlumne, sessions: [ { codiDia '1'..'5', nomDia, horaInici, horaSenceraInici 'HH:MM', horaSenceraFi 'HH:MM', ordreSessio, materia, materiaLlarg, classeSessio, nomAula, professors[], dataInici, dataFi } ] } ]" }
+}

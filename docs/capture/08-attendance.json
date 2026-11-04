@@ -1,0 +1,9 @@
+{
+  "captured": "2026-11-04 21:10, Claude in the founder's logged-in session (read-only), structure only",
+  "page": "https://www3.caib.es/xestibback/families/assistencia (script /xestibback/js/families/assistencia.js)",
+  "per_child_params": "Each child block has select#mesSelect_<matricula>; each option value is a call carregaFaltes(nomMes, mes, codiMatricula, codiCentre, codiAlumne, cursAcademic, codiArbre, anyArbre)",
+  "absences_feed": { "method": "GET (net.ContentLoader)", "url": "/xestibback/families/alumne/llistaFaltesMatriculaAlumne.xml", "params": "codiArbre, anyArbre, idioma, codiMatricula, mes, alumne, periode (fixed '12 Desembre 2016'), codiCentre, any", "response": "XML: <permetJustificacio>, <falta> elements with attributes codiFalta, data, hora, materia, tipus, justificada, dataSolicitud, descartada, observacionsCentre, codiDocument, dataEsborratDoc" },
+  "sanctions_feed": "/xestibback/families/sancions/llistaSancionsAlumnesMes.json (codiMatricula, mes, cursAcademic) - not used",
+  "justify_write": { "method": "POST multipart (FormData)", "url": "/xestibback/alumnat/alumne/desaSolicitudJustificacioFalta.do", "fields": ["motiuSolicitud (textarea #txtSolicitaJustFaltes, required)", "docJustificatiu (file, optional, size-limited)", "codiFalta (repeated, one per selected absence)"], "success": "response text 'ok'" },
+  "never_call": ["/xestibback/alumnat/alumne/noJustificacioFalta.do (declares 'will not justify')", "/xestibback/assistencia/sancions/enregistraAccesSancio.do (logs access)"]
+}

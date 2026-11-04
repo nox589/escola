@@ -1,0 +1,5 @@
+{
+  "captured": "2026-11-04 21:10, read from GestIB's own scripts, nothing sent",
+  "reply_write": { "method": "POST form-urlencoded", "url": "/xestibback/families/missatges/enviaMissatge.do (factory constant /personal/usuari/enviaMissatge.do, resolved per page)", "body": "codiMissatge=<codi>&text=<reply + '<br><br>>>Text original:<br>>><br>>>' + quoted original, dropped if total > 3800 chars>&origen=F", "only_when": "message.permetResposta === true", "success_response": "not captured; verify on the first supervised send by re-reading the sent list" },
+  "activities": { "page": "/xestibback/families/activitats", "rendering": "form#formHorari_<id> POST ../calendari/agenda/<id> (idioma, mostraSessionsEsplais) into iframe.calendari-iframe; FullCalendar with agendaAlumneFamilies.js; events feed URL not captured" }
+}

@@ -1,0 +1,5 @@
+{
+  "captured": "2026-11-04 21:10, read-only, structure only",
+  "term_grades": { "page": "/xestibback/families/qualificacions", "rendering": "server HTML: one table.table.table-bordered.table-striped per session (e.g. 'Sesión intermedia 1', 'Final'); empty state td.text-muted. No grades posted yet this term, so the filled layout is NOT captured." },
+  "partial_marks": { "page": "/xestibback/families/notesParcials (NotesParcialsController)", "feed": "POST notesParcials/notesAlumneMateria.json body codiMatricula, codiMateria, locale", "subject_list": "not captured (page showed an empty state)", "never_call": "notesParcials/confirmaVisualitzacioNota.do (confirms the parent has seen a mark)" }
+}
