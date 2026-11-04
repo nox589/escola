@@ -6,14 +6,22 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "tsx watch src/index.ts",
-    "canary": "tsx src/canary.ts"
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "canary": "tsx --env-file=../../.env src/canary.ts"
   },
   "dependencies": {
     "@escola/crypto": "workspace:*",
     "@escola/db": "workspace:*",
+    "@escola/llm": "workspace:*",
     "@escola/shared": "workspace:*",
-    "playwright": "^1.49.1",
-    "pino": "^9.5.0"
+    "@escola/storage": "workspace:*",
+    "bullmq": "^6.6.0",
+    "ioredis": "^6.0.0",
+    "pg": "^8.23.1",
+    "pino": "^9.5.0",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }

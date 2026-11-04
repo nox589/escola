@@ -1,0 +1,18 @@
+{
+  "name": "@escola/llm",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^1.1.1",
+    "@anthropic-ai/sdk": "^1.4.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1161.0",
+    "@escola/shared": "workspace:*",
+    "zod": "^3.25.76"
+  }
+}

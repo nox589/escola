@@ -34,4 +34,10 @@ Status key: **[TBD]** discover from the real portal · **[OPEN]** human decision
 - [ASSUMPTION] `portal_accounts.credential_version` added so the lockout guard can count failures per credential version (SPEC §8.4).
 - [ASSUMPTION] `LoginResult` gained `ambiguous?: boolean` (extension to SPEC §8.1) so the guard knows when one retry is allowed. "Back on the password form with no error shown" is the only ambiguous case today.
 - [ASSUMPTION] `submission_confirmations.invalidated_at` added; a DB trigger refuses to move a submission past `awaiting_confirmation` without a non-invalidated confirmation (backstop for golden rule 3).
-- [ASSUMPTION] Migrations are hand-applied SQL (`up`/`down`) generated from the Drizzle schema, because drizzle-kit has no down migrations.
+- [ASSUMPTION] Embeddings: Cohere multilingual v3 on Bedrock EU, 1024 dims (good for ca/es). Change EMBEDDING_DIM + migration if the vendor changes.
+- [ASSUMPTION] First sync doubles as the one-attempt login check (no separate verify_login job).
+- [ASSUMPTION] Each user gets a family on first sign-in; accepting an invite removes that empty family.
+- [ASSUMPTION] Children's names are replaced with placeholders before text goes to the LLM.
+- [ASSUMPTION] Co-parents join with can_submit=false; the owner turns it on per person.
+- [OPEN] Bedrock model IDs and region (eu-west-3 default). The direct Anthropic API is refused in production.
+- Migrations are hand-applied SQL (`up`/`down`) generated from the Drizzle schema, because drizzle-kit has no down migrations.

@@ -1,0 +1,171 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pressable, Text, View } from 'react-native';
+import { Badge, Banner, Button, Card, Divider, H1, Loading, P, Row, Screen } from '@/components/ui';
+import { LANG_NAMES } from '@/i18n';
+import { api, type ItemDetail } from '@/lib/api';
+import { shortDate } from '@/lib/hooks';
+import { font, space, useTheme } from '@/lib/theme';
+
+/** SPEC §11 screen 8. Golden rule 5: the original is always one tap away (and shown first if untranslated). */
+export default function Item() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { t, i18n } = useTranslation();
+  const c = useTheme();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['item', id], queryFn: () => api<ItemDetail>(`/items/${id}`) });
+  const [showOriginal, setShowOriginal] = useState(false);
+  const enabled = useQuery({
+    queryKey: ['submission-types'],
+    queryFn: () => api<{ kinds: { kind: string; enabled: boolean }[] }>('/submission-types'),
+  });
+
+  useEffect(() => {
+    if (id)
+      void api(`/items/${id}/read`, { method: 'POST' }).then(() =>
+        qc.invalidateQueries({ queryKey: ['items'] }),
+      );
+  }, [id, qc]);
+
+  if (!q.data) return <Loading />;
+  const it = q.data;
+  const tr = it.translation;
+  const original = showOriginal || !tr;
+  const action = it.actions.find((a) => a.state === 'open');
+  const canReply =
+    enabled.data?.kinds.some((k) => k.kind === 'reply_message' && k.enabled) && it.section === 'message';
+
+  const setActionState = async (state: 'done_elsewhere' | 'dismissed') => {
+    if (!action) return;
+    await api(`/items/${it.id}/actions/${action.id}`, { body: { state } });
+    await qc.invalidateQueries();
+    router.back();
+  };
+
+  const openAttachment = async (attId: string) => {
+    const { url } = await api<{ url: string }>(`/attachments/${attId}/url`);
+    await WebBrowser.openBrowserAsync(url);
+  };
+
+  return (
+    <Screen>
+      <Row style={{ flexWrap: 'wrap' }}>
+        {it.child ? <Badge label={it.child.name} /> : null}
+        <Badge label={t(`sections.${it.section}` as 'sections.other')} />
+        {it.postedAt ? (
+          <P muted small>
+            {shortDate(it.postedAt, i18n.language)}
+          </P>
+        ) : null}
+      </Row>
+      <H1>{original ? it.original.title : tr!.title}</H1>
+      {it.sender ? <P muted small>{`${t('item.from')}: ${it.sender}`}</P> : null}
+
+      {action ? (
+        <Card accent={c.warn}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Text style={{ color: c.ink, fontWeight: '700', fontSize: font.body }}>
+              {t(`actions.${action.kind}` as 'actions.reply')}
+            </Text>
+            {action.deadlineAt ? (
+              <Badge
+                label={t('home.due', { date: shortDate(action.deadlineAt, i18n.language) })}
+                tone="warn"
+              />
+            ) : null}
+          </Row>
+          {tr?.summary ? <P>{tr.summary}</P> : null}
+          {action.confidence < 0.6 ? (
+            <P muted small>
+              {t('item.checkOriginal')}
+            </P>
+          ) : null}
+        </Card>
+      ) : tr?.summary ? (
+        <Card>
+          <P>{tr.summary}</P>
+        </Card>
+      ) : null}
+
+      {tr?.checkOriginal ? <Banner text={t('item.checkOriginal')} /> : null}
+      {!tr ? <Banner text={t('item.notTranslated')} tone="ok" /> : null}
+
+      <View style={{ gap: space.s }}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <P muted small>
+            {original
+              ? t('item.original', { lang: LANG_NAMES[it.original.lang] ?? it.original.lang })
+              : t('item.translation')}
+          </P>
+          {tr ? (
+            <Pressable onPress={() => setShowOriginal((s) => !s)} accessibilityRole="button">
+              <Text style={{ color: c.accent, fontWeight: '600', fontSize: font.small }}>
+                {original ? t('item.showTranslation') : t('item.showOriginal')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </Row>
+        <P>{original ? it.original.body : tr!.body}</P>
+      </View>
+
+      {it.attachments.length ? (
+        <View style={{ gap: space.s }}>
+          <Divider />
+          <P muted small>
+            {t('item.attachments')}
+          </P>
+          {it.attachments.map((a) => (
+            <Card key={a.id} onPress={() => void openAttachment(a.id)}>
+              <Row>
+                <Text style={{ fontSize: 18 }}>📄</Text>
+                <Text style={{ color: c.ink, flex: 1 }}>{a.filename}</Text>
+                <P muted small>{`${Math.max(1, Math.round(a.size / 1024))} KB`}</P>
+              </Row>
+            </Card>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={{ flex: 1 }} />
+      <View style={{ gap: space.s }}>
+        {canReply ? (
+          <Button
+            title={t('item.reply')}
+            onPress={() => router.push({ pathname: '/reply/[itemId]', params: { itemId: it.id } })}
+          />
+        ) : null}
+        <Button
+          title={t('item.ask')}
+          kind="secondary"
+          onPress={() =>
+            router.push({
+              pathname: '/(tabs)/assistant',
+              params: { about: it.id, title: tr?.title ?? it.original.title },
+            })
+          }
+        />
+        {action ? (
+          <Row>
+            <View style={{ flex: 1 }}>
+              <Button
+                title={t('item.markDone')}
+                kind="ghost"
+                onPress={() => void setActionState('done_elsewhere')}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button
+                title={t('item.dismiss')}
+                kind="ghost"
+                onPress={() => void setActionState('dismissed')}
+              />
+            </View>
+          </Row>
+        ) : null}
+      </View>
+    </Screen>
+  );
+}

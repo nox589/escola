@@ -9,6 +9,8 @@ export default defineConfig({
       '@escola/shared': r('./packages/shared/src/index.ts'),
       '@escola/crypto': r('./packages/crypto/src/index.ts'),
       '@escola/db': r('./packages/db/src/index.ts'),
+      '@escola/storage': r('./packages/storage/src/index.ts'),
+      '@escola/llm': r('./packages/llm/src/index.ts'),
     },
   },
   test: {

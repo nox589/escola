@@ -192,6 +192,10 @@ export const items = pgTable(
     sender: text('sender'),
     postedAt: timestamp('posted_at', { withTimezone: true }),
     rawSnapshotKey: text('raw_snapshot_key'),
+    /** Deadline text as shown by the portal, if it has a dedicated field. */
+    deadlineRaw: text('deadline_raw'),
+    /** Set once the enrich job has translated/classified this version of the item. */
+    enrichedHash: text('enriched_hash'),
     firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
     isReadBy: jsonb('is_read_by').notNull().default({}),
     status: itemStatus('status').notNull().default('new'),
@@ -382,7 +386,7 @@ export const consents = pgTable('consents', {
 });
 
 /** [depends on model] Embedding dimension; change with EMBEDDING_MODEL and add a migration. */
-export const EMBEDDING_DIM = 1536;
+export const EMBEDDING_DIM = 1024;
 
 export const embeddings = pgTable('embeddings', {
   id: id(),
@@ -432,6 +436,43 @@ export const syncRuns = pgTable('sync_runs', {
   result: text('result'),
   sections: jsonb('sections').notNull().default({}),
   adapterVersion: text('adapter_version').notNull(),
+});
+
+// ---- Auth (not family-scoped; accessed only by API auth service code) ----
+
+export const authTokens = pgTable('auth_tokens', {
+  id: id(),
+  ...stamps,
+  email: text('email').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+});
+
+export const refreshTokens = pgTable('refresh_tokens', {
+  id: id(),
+  ...stamps,
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  /** All tokens descending from one login share a chain; reuse of a rotated token revokes the chain. */
+  chainId: uuid('chain_id').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  rotatedAt: timestamp('rotated_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});
+
+export const familyInvites = pgTable('family_invites', {
+  id: id(),
+  ...stamps,
+  familyId: familyRef(),
+  email: text('email').notNull(),
+  role: memberRole('role').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  invitedByUserId: uuid('invited_by_user_id').references(() => users.id),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
 });
 
 export const dataRequests = pgTable('data_requests', {

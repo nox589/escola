@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Escola",
+    "slug": "escola",
+    "version": "0.1.0",
+    "scheme": "escola",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.escola.parents",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Escola uses Face ID to confirm before anything is sent to the school."
+      }
+    },
+    "android": {
+      "package": "app.escola.parents",
+      "adaptiveIcon": {
+        "backgroundColor": "#E8F1EC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        { "faceIDPermission": "Escola uses Face ID to confirm before anything is sent to the school." }
+      ],
+      ["expo-notifications", { "color": "#1F6B52" }]
+    ]
+  }
+}

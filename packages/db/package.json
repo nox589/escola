@@ -8,8 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "generate": "drizzle-kit generate",
-    "migrate": "tsx src/cli.ts up",
-    "migrate:down": "tsx src/cli.ts down"
+    "migrate": "tsx --env-file=../../.env src/cli.ts up",
+    "migrate:down": "tsx --env-file=../../.env src/cli.ts down"
   },
   "dependencies": {
     "@escola/shared": "workspace:*",

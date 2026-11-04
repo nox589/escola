@@ -1,62 +1,68 @@
 # Escola (working name): GestIB parent app
 
-School messages from GestIB Famílies, in the parent's language. Built from `SPEC.md` (source of truth)
-following `CLAUDE.md`.
+School messages from GestIB Famílies, translated into the parent's language, with the original always one tap
+away. Built from `SPEC.md` (source of truth) following `CLAUDE.md`.
 
-## Status
+![Walkthrough](docs/screenshots/06-home.png)
 
-| Milestone | Task                                                                         | State                                           |
-| --------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
-| M0        | T0.1 monorepo (pnpm, turbo, TS strict, ESLint/Prettier, Vitest, CI)          | ✅                                              |
-| M0        | T0.2 Drizzle schema for every SPEC §6 table, up/down migrations, forced RLS  | ✅ tested on Postgres 16 + pgvector             |
-| M0        | T0.3 envelope encryption, KMS split (API can only encrypt)                   | ✅ local dev KMS; AWS/GCP pending vendor choice |
-| M0        | T0.4 shared Zod schemas/enums, `redact()`                                    | ✅                                              |
-| M1        | T1.1 mock portal: 2-step login, expiry, lockout, multi-child, submissions    | ✅                                              |
-| M1        | T1.2 adapter interface + GestIB adapter, all selectors `TO_BE_DISCOVERED`    | ✅ runs end to end vs mock                      |
-| M1        | T1.3 anonymiser, session recorder, discovery guide                           | ✅                                              |
-| M1        | **T1.4 capture real fixtures + fill real selectors**                         | ⏳ **needs you**, see below                     |
-| M2        | T2.1 lockout guard (logic + serialised store)                                | ✅ Postgres row-lock store still to wire        |
-| M2        | T2.2 child discovery + switching                                             | ✅ vs mock; real mechanism TBD                  |
-| M2        | T2.4 diff engine, attachment download + dedupe, backfill summary             | ✅ in-memory store; Postgres store next         |
-| M2        | ca/es deadline parser + LLM cross-check                                      | ✅ (used by T3.3)                               |
-| M6        | write-back gate: preview hash, no retry, `needs_manual`, DB trigger backstop | ✅ reply writer vs mock                         |
-| M2–M7     | scheduler, API, enrichment, mobile app, push, assistant, billing             | not started                                     |
+## What works today
 
-58 tests: unit, Postgres (RLS, migrations, confirmation trigger) and real-Chromium runs against the mock portal.
+The whole product runs end to end against a **mock GestIB portal**: sign up, consent, link GestIB, first sync,
+translated feed, item detail with original toggle, attachments, calendar, documents, assistant, settings, and
+replying to the school through the preview-and-confirm flow. `scripts/walkthrough.ts` drives all of it in a real
+browser at phone size; screenshots are in `docs/screenshots/`.
 
-## Hard guarantees already enforced in code and tests
+| Area | State |
+|---|---|
+| Phone app (Expo SDK 58, iOS/Android/web) | All SPEC §11 screens except paywall. UI in en/es/ca/de/fr |
+| API (Fastify) | Every SPEC §7 endpoint except uploads, digests, `calendar.ics` |
+| Worker (BullMQ + Playwright) | Scheduler, sync, enrich, notify, submit; session reuse; lockout guard |
+| AI | Bedrock EU provider (Anthropic models + Cohere multilingual embeddings), offline fake for dev/tests |
+| Push | Expo push, per-guardian locale, batching, quiet hours, lock-screen privacy |
+| Data | Postgres 16 + pgvector, forced RLS per family, envelope-encrypted credentials and cookies |
+| **Real GestIB** | **Not connected yet.** Needs your fixture capture (below) |
 
-- **No invented GestIB internals.** Real `selectors.ts` is all placeholders; the adapter throws `SelectorNotDiscoveredError` instead of guessing.
-- **Password tried at most once (twice only if the result page was ambiguous)**, then `credentials_invalid` and zero further attempts. Concurrent workers are serialised per account.
-- **No write without confirmation.** Checked three times: preview hash must match exactly what is sent, the portal form must echo the confirmed text, and a Postgres trigger refuses to queue a submission with no valid confirmation. Submit is never retried.
-- **Cross-family reads/writes blocked** by forced Postgres RLS.
-- **No secrets in logs.** Worker uses a redacting logger; `console` is lint-banned there.
-- **Original always kept** alongside translations (schema + API types require it).
+87 automated tests: unit, Postgres, API, and real-Chromium runs of the worker against the mock portal.
 
-## Run it
+## Guarantees enforced in code and tests
+- **No invented GestIB internals.** Real selectors are placeholders; the adapter refuses to run until they come from captured pages.
+- **Password tried once** (twice only when the result page is ambiguous), then the account stops and the parent is told. Saved cookies are reused so most syncs send no password at all.
+- **Nothing is sent to school without confirmation.** The preview hash must match what is sent, the portal form must echo it, a DB trigger blocks unconfirmed submissions, any edit invalidates the confirmation, and a send is never retried.
+- **Families are isolated** by forced Postgres row-level security.
+- **The API can only encrypt** credentials; only the worker can decrypt, in memory, and wipes them after use.
+- **No secrets or child content in logs.** Tests grep the logs for the password.
+- **Original text is always stored and shown** next to translations.
 
+## Run it locally
+Needs Node 20+, pnpm, Postgres 16 with pgvector, Redis, Chrome or Playwright Chromium.
 ```bash
 pnpm i
-pnpm build && pnpm test          # set TEST_DATABASE_URL to also run the Postgres tests
-pnpm mock-portal                 # http://localhost:4010, login parent1 / escola123
+cp .env.example .env            # fill LOCAL_KMS_KEY and JWT_SECRET (commands in the file)
+pnpm stack:up                   # mock GestIB + API + worker + web app on :8081
+pnpm walkthrough                # optional: drives the whole app in Chrome, saves screenshots
+pnpm test                       # set TEST_DATABASE_URL for the Postgres/API/pipeline tests
 ```
+Open http://localhost:8081, sign in with any email (the magic link is printed in `.data/logs/api.log`),
+and link GestIB with the mock login `parent1` / `escola123`. On a phone: `pnpm --filter @escola/mobile start`
+and open it in Expo Go (set `EXPO_PUBLIC_API_URL` to your machine's IP).
 
-Worker browser tests need Chromium: `pnpm exec playwright install chromium`, or `CHROME_PATH=/path/to/chrome`.
-
-## Next step that needs you (T1.4)
-
-Follow `docs/SELECTOR_DISCOVERY.md`: run `scripts/record-session.ts`, log in by hand, browse each section,
-anonymise the pages, then the real selectors can be written against them. About 30 minutes of your time.
-Open decisions (EU vendors, CAIB legal position) are in `docs/OPEN_QUESTIONS.md`.
+## What is left before real parents can use it
+1. **Capture GestIB pages (you, about 30 minutes).** Follow `docs/SELECTOR_DISCOVERY.md`. Then real selectors get written and the read-only canary runs against your account. Replying stays switched off until it is verified on a real account.
+2. **Choose EU vendors** (`docs/OPEN_QUESTIONS.md` #16): hosting, KMS (only a local dev KMS exists), Bedrock region and model IDs, email.
+3. **Legal**: CAIB position on automated access, entity, ToS/Privacy, DPIA (`docs/DPIA.md`).
+4. **Not built yet**: RevenueCat paywall in the app (webhook exists), email/WhatsApp digest, document upload and the other write types, `.ics` feed, EAS build config, Maestro flows.
 
 ## Layout
-
 ```
-apps/mock-portal       synthetic GestIB stand-in for tests and dev
-packages/shared        enums, Zod schemas, redact()
-packages/crypto        envelope encryption, KMS wrapper/unwrapper split
-packages/db            Drizzle schema, migrations (up/down), RLS, withFamily()
-workers/sync           adapter interface, GestIB adapter, lockout guard, diff, deadlines, sync, write-back
-scripts                anonymiser, session recorder
-docs                   SELECTOR_DISCOVERY, OPEN_QUESTIONS, DPIA draft, RUNBOOK
+apps/mobile         Expo app (src/app routes, src/i18n, src/lib)
+apps/api            Fastify API
+apps/mock-portal    synthetic GestIB stand-in for dev and tests
+workers/sync        adapter, lockout guard, sync, enrich, notify, submit, BullMQ main
+packages/shared     enums, Zod schemas, redact(), preview hash
+packages/db         Drizzle schema, migrations (up/down), RLS
+packages/crypto     envelope encryption, KMS wrap/unwrap split
+packages/llm        providers (Bedrock EU / fake), enrichment + drafting prompts
+packages/storage    S3 (EU, SSE-KMS) or local blob store with signed URLs
+scripts             stack, walkthrough, anonymiser, GestIB session recorder
+docs                SELECTOR_DISCOVERY, OPEN_QUESTIONS, DPIA, RUNBOOK, screenshots
 ```

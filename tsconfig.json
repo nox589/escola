@@ -1,5 +1,16 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "noEmit": true, "lib": ["ES2022", "DOM"], "types": ["node"] },
-  "include": ["packages/*/src", "apps/*/src", "workers/*/src", "scripts", "vitest.config.ts"]
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "paths": {
+      "@escola/shared": ["./packages/shared/src/index.ts"],
+      "@escola/crypto": ["./packages/crypto/src/index.ts"],
+      "@escola/db": ["./packages/db/src/index.ts"],
+      "@escola/storage": ["./packages/storage/src/index.ts"],
+      "@escola/llm": ["./packages/llm/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src", "apps/mock-portal/src", "apps/api/src", "workers/*/src", "scripts", "vitest.config.ts"]
 }

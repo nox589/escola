@@ -15,7 +15,11 @@
     "dev": "turbo run dev --parallel",
     "db:migrate": "pnpm --filter @escola/db migrate",
     "mock-portal": "pnpm --filter @escola/mock-portal start",
-    "anonymise": "tsx scripts/anonymise.ts"
+    "anonymise": "tsx scripts/anonymise.ts",
+    "stack:up": "scripts/stack.sh up",
+    "stack:down": "scripts/stack.sh down",
+    "walkthrough": "tsx scripts/walkthrough.ts .data/logs/api.log docs/screenshots",
+    "web:build": "pnpm --filter @escola/mobile export:web"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

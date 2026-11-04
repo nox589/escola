@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createPool, migrateDown, migrateUp, schema, withFamily } from './index.js';
+import { createTestDatabase } from './testing.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;
@@ -20,28 +21,31 @@ async function pgErr(p: Promise<unknown>): Promise<string> {
 d('database (TEST_DATABASE_URL)', () => {
   let admin: pg.Client;
   let pool: pg.Pool;
+  let testDb: Awaited<ReturnType<typeof createTestDatabase>>;
   const famA = crypto.randomUUID();
   const famB = crypto.randomUUID();
 
   beforeAll(async () => {
-    admin = new pg.Client({ connectionString: url });
+    testDb = await createTestDatabase(url!);
+    admin = new pg.Client({ connectionString: testDb.url });
     await admin.connect();
-    await admin.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
-    pool = createPool(url!);
+    await migrateDown(admin); // start from an empty schema so up/down is exercised fully
+    pool = createPool(testDb.url);
   });
   afterAll(async () => {
     await pool?.end();
     await admin?.end();
+    await testDb?.drop();
   });
 
   it('migrates up, down, and up again', async () => {
-    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls']);
-    expect(await migrateDown(admin)).toEqual(['0001_rls', '0000_init']);
+    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls', '0002_auth_and_helpers']);
+    expect(await migrateDown(admin)).toEqual(['0002_auth_and_helpers', '0001_rls', '0000_init']);
     const t = await admin.query(
       `SELECT count(*)::int n FROM pg_tables WHERE schemaname='public' AND tablename='items'`,
     );
     expect(t.rows[0].n).toBe(0);
-    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls']);
+    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls', '0002_auth_and_helpers']);
   });
 
   it('RLS blocks cross-family reads and writes', async () => {

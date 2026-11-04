@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Page } from 'playwright';
 import { WriteNotConfirmedError } from '../adapters/errors.js';
 import type { PortalAdapter, SubmissionPayload, VerifyResult } from '../adapters/types.js';
@@ -14,19 +13,8 @@ export interface Confirmation {
   userCanSubmit: boolean;
 }
 
-/** Hash of exactly what the parent saw: kind + target + original-language text + fields. */
-export function computePreviewHash(
-  p: Pick<SubmissionPayload, 'kind' | 'itemRef' | 'childRef' | 'text' | 'fields'>,
-): string {
-  const canonical = JSON.stringify({
-    kind: p.kind,
-    itemRef: p.itemRef ?? null,
-    childRef: p.childRef,
-    text: p.text,
-    fields: Object.fromEntries(Object.entries(p.fields).sort(([a], [b]) => a.localeCompare(b))),
-  });
-  return createHash('sha256').update(canonical).digest('hex');
-}
+export { computePreviewHash } from '@escola/shared';
+import { computePreviewHash } from '@escola/shared';
 
 export type WriteOutcome =
   | { state: 'succeeded'; verify: VerifyResult; screenshot: Buffer }

@@ -266,11 +266,18 @@ export function createGestibAdapter(opts: GestibAdapterOptions = {}): PortalAdap
     },
   };
 
+  async function resumeSession(page: Page) {
+    const res = await page.goto(need(S.urls.entry, 'urls.entry'), { waitUntil: 'load' });
+    if (res && res.status() >= 500) return false;
+    return isLoggedIn(page);
+  }
+
   return {
     id: 'gestib',
     version: GESTIB_ADAPTER_VERSION,
     login,
     isLoggedIn,
+    resumeSession,
     listChildren,
     switchChild,
     sections: () => readers,

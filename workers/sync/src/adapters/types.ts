@@ -7,6 +7,8 @@ export interface PortalAdapter {
   version: string;
   login(ctx: BrowserContext, creds: Credentials): Promise<LoginResult>;
   isLoggedIn(page: Page): Promise<boolean>;
+  /** Navigates with saved cookies; true if still authenticated (no credentials used). */
+  resumeSession?(page: Page): Promise<boolean>;
   listChildren(page: Page): Promise<PortalChild[]>;
   switchChild(page: Page, child: PortalChild): Promise<void>;
   sections(): SectionReader[];

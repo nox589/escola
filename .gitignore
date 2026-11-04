@@ -7,3 +7,5 @@ dist
 coverage
 fixtures/gestib/**/raw/
 *.trace.zip
+packages/db/drizzle-out
+.data
