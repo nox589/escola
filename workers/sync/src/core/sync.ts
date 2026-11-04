@@ -109,7 +109,7 @@ export async function openPortalSession(o: PortalSessionOptions): Promise<Portal
     }),
   );
   if (!result.ok) {
-    log.warn({ accountId: o.accountId, code: result.code, action: decision.action }, 'login failed');
+    log.warn({ accountId: o.accountId, code: result.code, action: decision.action, detail: result.detail }, 'login failed');
     return { page: null, decision, reused: false, close };
   }
   await o.sessions?.save(await result.page.context().storageState()).catch(() => undefined);
@@ -135,12 +135,16 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
 
     report.children = await o.adapter.listChildren(page);
     const known = await o.items.known(o.accountId);
+    // Account-wide sections (e.g. messages) are read once, not once per child.
+    const accountDone = new Set<string>();
 
     for (const child of report.children) {
       await o.adapter.switchChild(page, child);
       const results: SyncedDiff[] = [];
       const attachments: StoredAttachment[] = [];
       for (const reader of o.adapter.sections()) {
+        if (reader.scope === 'account' && accountDone.has(reader.slug)) continue;
+        accountDone.add(reader.slug);
         try {
           const fresh = await reader.read(page, child);
           const diffs = diffItems(fresh, known);

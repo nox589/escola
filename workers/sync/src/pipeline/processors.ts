@@ -112,7 +112,14 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
         await d.enqueue.sync({ ...job, attempt: attempt + 1 }, BACKOFF_MIN[attempt]! * 60_000);
     } else if (decision?.action === 'drift_alert') {
       result = 'unknown_page';
-      log.error({ portalAccountId, alert: 'parser_drift' }, 'unknown page after login');
+      // Pause: the scheduler must not keep re-sending the password to a page we cannot classify.
+      await withFamily(pool, familyId, (db) =>
+        db
+          .update(schema.portalAccounts)
+          .set({ status: 'paused', lastErrorCode: 'UNKNOWN_PAGE' })
+          .where(eq(schema.portalAccounts.id, portalAccountId)),
+      );
+      log.error({ portalAccountId, alert: 'parser_drift' }, 'unknown page after login; account paused');
     } else {
       // Logged in (fresh or reused session).
       result = report.errors.length ? 'partial' : 'ok';

@@ -10,6 +10,7 @@ import { createPool } from '@escola/db';
 import { createProviders, llmConfigFromEnv } from '@escola/llm';
 import { createBlobStore } from '@escola/storage';
 import { createGestibAdapter } from './adapters/gestib/adapter.js';
+import { createGestibLiveAdapter } from './adapters/gestib/live.js';
 import { mockSelectors } from './adapters/gestib/selectors.mock.js';
 import { log } from './core/logger.js';
 import { ExpoPushSender } from './notify/push.js';
@@ -49,12 +50,12 @@ const getBrowser = async () => {
 
 // Real GestIB only when explicitly allowed; otherwise the local mock portal.
 const useMock = env.ALLOW_REAL_PORTAL !== 'true';
-const adapter = createGestibAdapter({
-  selectors: useMock ? mockSelectors(env.GESTIB_MOCK_URL ?? 'http://localhost:4010') : undefined,
-  enabledWriters: (env.ENABLED_WRITERS || (useMock ? 'reply_message' : ''))
-    .split(',')
-    .filter(Boolean) as never[],
-});
+const adapter = useMock
+  ? createGestibAdapter({
+      selectors: mockSelectors(env.GESTIB_MOCK_URL ?? 'http://localhost:4010'),
+      enabledWriters: (env.ENABLED_WRITERS || 'reply_message').split(',').filter(Boolean) as never[],
+    })
+  : createGestibLiveAdapter(); // read-only; no writers
 
 const providers = createProviders(llmConfigFromEnv());
 const opts = { removeOnComplete: 1000, removeOnFail: 5000 };

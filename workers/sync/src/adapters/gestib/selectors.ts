@@ -107,3 +107,55 @@ export const gestibSelectors: GestibSelectors = {
     successRefAttr: TBD,
   },
 };
+
+/**
+ * LIVE GestIB values captured 2026-11-04 in a human-run session (Andrew logged in himself).
+ * Structure only, no personal data. Source notes: docs/capture/01..07-*.json (named per value).
+ * Used by ./live.ts. The generic `gestibSelectors` above stays TBD for the old page-scraping path.
+ */
+export const gestibLive = {
+  urls: {
+    home: 'https://www3.caib.es/xestibback/families/home', // 03-home.json
+    families: 'https://www3.caib.es/xestibback/families/', // 03-home.json
+    idpHost: 'idp.caib.es', // 01-idp-username.json
+  },
+  login: {
+    usernameInput: '#j_username', // 01-idp-username.json
+    usernameSubmit: 'form#form-pass #loginpassbutton', // 01-idp-username.json
+    passwordInput: '#j_password', // 02-idp-password.json
+    passwordSubmit: 'form[action="/passwordLoginAction"] #loginpassbutton', // 02-idp-password.json
+    loggedInMarker: 'input#codiFillSeleccionat', // 03-home.json
+    /** Visible CAPTCHA widgets. The hidden captchaToken field alone is not a CAPTCHA (02-idp-password.json). */
+    captchaMarker: 'iframe[src*="recaptcha"], iframe[src*="hcaptcha"], .g-recaptcha, .h-captcha, img[src*="captcha" i]',
+  },
+  children: {
+    selectedCard: 'div.alumno-seleccionado-card', // 03-home.json
+    selectedRef: 'input#codiFillSeleccionat', // 03-home.json
+    chip: 'button.alumno-chip', // 03-home.json
+    chipRefInput: 'input[name="idFill"]', // 03-home.json (in the chip's form)
+  },
+  messages: {
+    page: 'missatges', // 04-messages.json
+    summaryUrl: '/xestibback/families/missatges/resumMissatgesXUsuari.json', // 04-messages.json
+    listUrl: '/xestibback/families/missatges/llistaMissatgesXCodi.json', // 04-messages.json
+    listParam: 'codisMissatges', // 04-messages.json
+  },
+  circulars: {
+    page: 'circulars', // 06-circulars.json
+    item: 'div.box[id^="circular_"]', // 06-circulars.json
+    idPrefix: 'circular_',
+    title: 'h4.box-title span.text', // 06-circulars.json
+    body: 'div.text-enriquit', // 06-circulars.json
+    attachment: 'a[href*="veureDocumentAdjunt.do"]', // 06-circulars.json
+    unreadClass: 'circularNoVista', // 06-circulars.json
+  },
+  authorisations: {
+    page: 'autoritzacions', // 05-authorisations.json
+    item: 'div.box[id^="autoritzacio_"]', // 05-authorisations.json
+    idPrefix: 'autoritzacio_',
+    title: 'h4.box-title a', // 05-authorisations.json
+    status: 'div.panel-collapse > span > b', // 05-authorisations.json
+    body: 'div.text-enriquit', // 05-authorisations.json
+    attachment: 'a[href*="veureDocumentAdjunt.do"]', // 05-authorisations.json
+  },
+} as const;
