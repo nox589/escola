@@ -101,3 +101,53 @@ export const submissionView = z.object({
   previewHash: z.string().nullable(),
 });
 export type SubmissionView = z.infer<typeof submissionView>;
+
+/** One weekly timetable slot, as read from GestIB (subject names stay in the original language). */
+export const timetableSession = z.object({
+  /** 1 = Monday ... 5 = Friday */
+  day: z.number().int().min(1).max(7),
+  start: z.string().regex(/^\d{2}:\d{2}$/),
+  end: z.string().regex(/^\d{2}:\d{2}$/),
+  subject: z.string(),
+  /** Filled after sync by the label translator, in the family's first language. */
+  subjectTranslated: z.string().nullable().optional(),
+  subjectShort: z.string().nullable(),
+  room: z.string().nullable(),
+  teachers: z.array(z.string()),
+});
+export type TimetableSession = z.infer<typeof timetableSession>;
+
+export const absenceView = z.object({
+  id: z.string().uuid(),
+  childId: z.string().uuid(),
+  day: z.string(),
+  period: z.string().nullable(),
+  subject: z.string().nullable(),
+  kind: z.string(),
+  status: z.enum(['justified', 'pending', 'unjustified']),
+  reason: z.string().nullable(),
+  schoolNote: z.string().nullable(),
+  canJustify: z.boolean(),
+});
+export type AbsenceView = z.infer<typeof absenceView>;
+
+/** Teachers derived from the timetable, most hours first. */
+export interface TeacherView {
+  name: string;
+  subjects: string[];
+  hoursPerWeek: number;
+}
+export function teachersFromTimetable(sessions: TimetableSession[]): TeacherView[] {
+  const m = new Map<string, { subjects: Set<string>; minutes: number }>();
+  const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  for (const s of sessions)
+    for (const name of s.teachers) {
+      const e = m.get(name) ?? { subjects: new Set<string>(), minutes: 0 };
+      e.subjects.add(s.subject);
+      e.minutes += Math.max(0, mins(s.end) - mins(s.start));
+      m.set(name, e);
+    }
+  return [...m.entries()]
+    .map(([name, e]) => ({ name, subjects: [...e.subjects], hoursPerWeek: Math.round((e.minutes / 60) * 10) / 10 }))
+    .sort((a, b) => b.hoursPerWeek - a.hoursPerWeek || a.name.localeCompare(b.name));
+}

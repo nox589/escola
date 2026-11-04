@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { and, eq, isNull } from '@escola/db';
+import { and, eq, isNotNull, isNull } from '@escola/db';
 import type pg from 'pg';
 import { schema, withFamily } from '@escola/db';
 import type { BlobStore } from '@escola/storage';
-import type { PortalChild, SchoolDay } from '../adapters/types.js';
+import type { ChildDetails, PortalChild, SchoolDay } from '../adapters/types.js';
 import type { KnownItem } from '../core/diff.js';
 import type { GuardAccount, LockoutStore } from '../core/lockoutGuard.js';
 import type { ItemStore, SavedItem, StoredAttachment, SyncedDiff } from '../core/sync.js';
@@ -156,6 +156,65 @@ export class PgItemStore implements ItemStore {
           kind: 'school',
         })),
       );
+    });
+  }
+
+  async saveChildDetails(accountId: string, child: PortalChild, d: ChildDetails): Promise<void> {
+    await withFamily(this.pool, this.familyId, async (db) => {
+      const [row] = await db
+        .select({ id: schema.children.id })
+        .from(schema.children)
+        .where(and(eq(schema.children.portalAccountId, accountId), eq(schema.children.portalChildRef, child.ref)));
+      if (!row) return;
+      const childId = row.id;
+      if (d.timetable)
+        await db
+          .update(schema.children)
+          .set({ timetable: d.timetable, detailsSyncedAt: new Date(), updatedAt: new Date() })
+          .where(eq(schema.children.id, childId));
+      if (d.absences) {
+        const keep = d.absences.map((a) => a.ref);
+        const existing = await db
+          .select({ id: schema.absences.id, ref: schema.absences.portalRef })
+          .from(schema.absences)
+          .where(eq(schema.absences.childId, childId));
+        for (const e of existing.filter((x) => !keep.includes(x.ref)))
+          await db.delete(schema.absences).where(eq(schema.absences.id, e.id));
+        for (const a of d.absences) {
+          const v = {
+            day: a.day,
+            period: a.period,
+            subject: a.subject,
+            kind: a.kind,
+            status: a.status,
+            reason: a.reason,
+            schoolNote: a.schoolNote,
+            canJustify: a.canJustify,
+          };
+          await db
+            .insert(schema.absences)
+            .values({ familyId: this.familyId, childId, portalRef: a.ref, ...v })
+            .onConflictDoUpdate({ target: [schema.absences.childId, schema.absences.portalRef], set: { ...v, updatedAt: new Date() } });
+        }
+      }
+      if (d.agenda) {
+        await db
+          .delete(schema.calendarEntries)
+          .where(and(eq(schema.calendarEntries.childId, childId), isNotNull(schema.calendarEntries.sourceRef)));
+        if (d.agenda.length)
+          await db.insert(schema.calendarEntries).values(
+            d.agenda.map((e) => ({
+              familyId: this.familyId,
+              childId,
+              titleOriginal: e.title,
+              startsAt: new Date(e.start),
+              endsAt: e.end ? new Date(e.end) : null,
+              allDay: e.allDay,
+              kind: e.kind === 'evaluation' ? 'evaluation' : e.kind === 'meeting' ? 'meeting' : e.kind === 'trip' ? 'trip' : 'event',
+              sourceRef: e.ref,
+            })),
+          );
+      }
     });
   }
 

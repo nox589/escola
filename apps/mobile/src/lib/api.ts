@@ -198,3 +198,38 @@ export interface CalendarEntry {
   allDay: boolean;
   kind: string;
 }
+export interface TimetableSession {
+  day: number;
+  start: string;
+  end: string;
+  subject: string;
+  subjectTranslated?: string | null;
+  subjectShort: string | null;
+  room: string | null;
+  teachers: string[];
+}
+export interface Absence {
+  id: string;
+  day: string;
+  period: string | null;
+  subject: string | null;
+  kind: string;
+  status: 'justified' | 'pending' | 'unjustified';
+  reason: string | null;
+  schoolNote?: string | null;
+  canJustify: boolean;
+}
+export interface ChildProfile {
+  id: string;
+  displayName: string;
+  classLabel: string | null;
+  colour: string | null;
+  detailsSyncedAt: string | null;
+  timetable: TimetableSession[];
+  teachers: { name: string; subjects: string[]; hoursPerWeek: number }[];
+  absences: Absence[];
+  upcoming: { id: string; title: string; titleOriginal: string; startsAt: string; endsAt: string | null; allDay: boolean; kind: string }[];
+}
+export interface FamilyAbsence extends Absence {
+  child: { id: string; name: string; colour: string | null };
+}

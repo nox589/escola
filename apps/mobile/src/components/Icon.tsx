@@ -11,13 +11,14 @@ export type IconName =
   | 'file'
   | 'check'
   | 'send'
+  | 'alert'
   | 'sparkle';
 
 /** Stroke icons drawn to match the clases mockup. Decorative unless given a label by the parent. */
 export function Icon({ name, size = 22, color = '#203B39', strokeWidth = 2 }: { name: IconName; size?: number; color?: string; strokeWidth?: number }) {
   const p = { stroke: color, strokeWidth, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <Svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       {name === 'home' ? (
         <>
           <Path d="M3 11 12 4l9 7" {...p} />
@@ -58,6 +59,11 @@ export function Icon({ name, size = 22, color = '#203B39', strokeWidth = 2 }: { 
         </>
       ) : name === 'check' ? (
         <Path d="m5 12 5 5 9-10" {...p} />
+      ) : name === 'alert' ? (
+        <>
+          <Circle cx={12} cy={12} r={9} {...p} />
+          <Path d="M12 7.5v5.5M12 16.5v.01" {...p} />
+        </>
       ) : name === 'send' ? (
         <Path d="M5 12h14M13 6l6 6-6 6" {...p} />
       ) : (

@@ -8,7 +8,7 @@ import { AskBar, Dot } from '@/components/Clases';
 import { Icon } from '@/components/Icon';
 import { P } from '@/components/ui';
 import { api, type CalendarEntry } from '@/lib/api';
-import { useChildren } from '@/lib/hooks';
+import { useChildren, useProfiles } from '@/lib/hooks';
 import { font, space, useTheme } from '@/lib/theme';
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -50,6 +50,20 @@ export default function Week() {
     },
   });
 
+  const profiles = useProfiles((kids.data ?? []).map((k) => k.id));
+  /** Per-child class span for a date (none on school days off). */
+  const classesOn = (d: Date) => {
+    const wd = ((d.getDay() + 6) % 7) + 1;
+    if ((byDay.get(ymd(d)) ?? []).some((e) => e.kind === 'school')) return [];
+    return profiles
+      .map((q) => q.data)
+      .filter((p): p is NonNullable<typeof p> => !!p)
+      .map((p) => {
+        const s = p.timetable.filter((x) => x.day === wd).sort((a, b) => a.start.localeCompare(b.start));
+        return s.length ? { id: p.id, name: p.displayName, colour: p.colour, count: s.length, from: s[0]!.start, to: s[s.length - 1]!.end } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => !!x);
+  };
   const colourOf = (e: CalendarEntry) => e.child?.colour ?? kids.data?.find((k) => k.id === e.childId)?.colour ?? null;
   const byDay = new Map<string, CalendarEntry[]>();
   for (const e of week.data ?? []) {
@@ -71,9 +85,9 @@ export default function Week() {
   }, [ahead.data]);
   const fmt = (d: string) => new Intl.DateTimeFormat(loc, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(`${d}T12:00:00`));
 
-  const shown = days.filter((d) => (day ? ymd(d) === day : true)).filter((d) => byDay.get(ymd(d))?.length);
+  const shown = days.filter((d) => (day ? ymd(d) === day : true)).filter((d) => byDay.get(ymd(d))?.length || classesOn(d).length);
   const kindLabel = (k: string) => t(`cl.kinds.${k}` as 'cl.kinds.event', { defaultValue: k });
-  const kindColour = (k: string) => (k === 'deadline' ? c.warn : k === 'school' ? c.success : c.accent);
+  const kindColour = (k: string) => (k === 'deadline' ? c.warn : k === 'school' ? c.success : k === 'evaluation' ? '#6B5B95' : c.accent);
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -156,6 +170,20 @@ export default function Week() {
                 </Text>
               ) : null}
             </View>
+            {classesOn(d).map((k) => (
+              <Pressable
+                key={`cls-${k.id}`}
+                onPress={() => router.push({ pathname: '/child/[id]', params: { id: k.id, tab: 'timetable' } })}
+                accessibilityRole="link"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, minHeight: 32 }}
+              >
+                <Dot colour={k.colour} size={6} />
+                <Text style={{ color: c.mutedOnBg, fontSize: 13 }}>
+                  <Text style={{ fontWeight: '600', color: c.ink }}>{k.name}</Text>
+                  {`  ${t('cl.classes', { count: k.count, from: k.from, to: k.to })}`}
+                </Text>
+              </Pressable>
+            ))}
             {(byDay.get(ymd(d)) ?? []).map((e) => (
               <Pressable
                 key={e.id}

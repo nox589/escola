@@ -9,6 +9,7 @@ import type { PortalAdapter } from '../adapters/types.js';
 import { BACKOFF_MIN } from '../core/lockoutGuard.js';
 import { log } from '../core/logger.js';
 import { runSync } from '../core/sync.js';
+import { translateLabels } from '../enrich/labels.js';
 import { enrichItems } from '../enrich/job.js';
 import { notifyAccountProblem, notifyBackfillSummary, notifyItems } from '../notify/job.js';
 import type { PushSender } from '../notify/push.js';
@@ -149,6 +150,9 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
         });
       else if (report.backfill)
         await notifyBackfillSummary({ pool, familyId, openActions: 0, sender: d.sender });
+      await translateLabels({ pool, familyId, llm: d.llm }).catch((e) =>
+        log.warn({ familyId, err: e instanceof Error ? e.message.slice(0, 120) : 'error' }, 'label translation failed'),
+      );
     }
 
     await withFamily(pool, familyId, (db) =>

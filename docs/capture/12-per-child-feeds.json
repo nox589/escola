@@ -1,0 +1,27 @@
+{
+  "captured": "2026-11-04 22:10, Claude in the founder's logged-in session (read-only GETs/POSTs of read feeds), structure only",
+  "child_context": "horari, assistencia and activitats render for the SELECTED child only. Select by POST /xestibback/families/home body idFill=<chip id>. The default-selected record (alumno-seleccionado-card) can be a past enrolment with no blocks; use chip ids.",
+  "timetable": {
+    "matricula": "horari page inline mostraHorariAlumne('<matricula 32>', '<codiCentre>', '<codiGrup>', '<any>')",
+    "feed": "POST /xestibback/families/llistes/alumnat/quadrantHorariAlumnes.json codiMatricula, idioma",
+    "session_keys": "codiSessio, dataInici, dataFi, horaInici, horaSenceraInici, horaSenceraFi, duradaSessio, classeSessio, codiDia '1'..'5', nomDia, ordreSessio, mostrar 'true', materies[], materia, materiaLlarg, nomAula, idioma, activitat, costSessio, professors[]",
+    "professor_keys": "dataInici, dataFi, professor (display name string), refors 'false', actiu 'true', mostrar, pareSessio"
+  },
+  "attendance": {
+    "params_source": "assistencia page inline pintaBotons(\"<codiMatricula>\", \"<any>\", \"<codiMatriculaParam>\", \"<codiCentre>\", \"<codiAlumne>\", \"<cursAcademic>\", \"<codiArbre>\", \"<anyArbre>\", \"<etapa>\") with DOUBLE quotes",
+    "months": "getLlistaMesos(any): Sep..Dec of any, then Jan..Jun of any+1, only months <= today; request param any = that month's calendar year",
+    "feed": "GET /xestibback/families/alumne/llistaFaltesMatriculaAlumne.xml?codiArbre&anyArbre&idioma&codiMatricula&mes&alumne&periode=12%20Desembre%202016&codiCentre&any",
+    "falta_attrs": "codiFalta, data dd/mm/yyyy, materia, hora, tipus (e.g. Asistencia), just, justificada 'true'|'false'|'', observacionsCentre, solicitant, dataSolicitud, codiDocument, dataEsborratDoc, descartada 'true'|''",
+    "falta_children": "motiuAbsencia (text)",
+    "status_rule": "justificada=='true' -> justified; else !descartada && dataSolicitud -> pending; else -> not justified (from assistencia.js)",
+    "justify_window": "only within 60 days and when permetJustificacio=='true'"
+  },
+  "agenda": {
+    "page": "activitats form[id^=formHorari_] action ../calendari/agenda/<id>, POST idioma, mostraSessionsEsplais=S",
+    "data": "script[type='application/json'][id] blocks, each [{events, id, className}]; event keys start, end?, id, title, allDay, tooltip, visibleFamilies, lloc, class",
+    "blocks_used": ["data-eventAvaluacio", "data-eventReunioPares", "data-eventAgenda", "data-eventAlumne", "data-eventsCentre_agenda", "data-sortidesEscolars"],
+    "blocks_ignored": ["data-eventsCapDeSetmana", "data-eventFestiu", "data-eventVacances", "data-eventPeriodeNoLectiu (school calendar already read)", "data-eventsHorariActivitatsGrup_esplais (breaks)", "data-eventSessions", "data-eventHorariActivitatsGrup_activitatHoraria"]
+  },
+  "partial_marks": "notesParcials page currently empty for both children",
+  "messages": "resumMissatgesXUsuari.json reports 12 total"
+}

@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import pg from 'pg';
 import { chromium, type Browser } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createPool, schema, withFamily } from '@escola/db';
+import { createPool, eq, schema, withFamily } from '@escola/db';
 import { createTestDatabase } from '../../../../packages/db/src/testing.js';
 import { LocalBlobStore } from '@escola/storage';
 import { createMockPortal } from '../../../../apps/mock-portal/src/app.js';
@@ -33,6 +33,7 @@ d('Postgres stores', () => {
   beforeAll(async () => {
     db = await createTestDatabase(base!);
     pool = createPool(db.url);
+    pool.on('error', () => undefined); // idle clients killed by db.drop() in teardown
     const admin = new pg.Client({ connectionString: db.url });
     await admin.connect();
     const u = await admin.query(`INSERT INTO users(email) VALUES ('p@x.test') RETURNING id`);
@@ -113,5 +114,31 @@ d('Postgres stores', () => {
     const [acc] = await withFamily(pool, familyId, (tx) => tx.select().from(schema.portalAccounts));
     expect(acc!.status).toBe('credentials_invalid');
     expect(acc!.consecutiveAuthFailures).toBe(1);
+  });
+
+  it('stores child details under RLS; a failed part keeps the stored data', async () => {
+    const blobs = new LocalBlobStore(await mkdtemp(join(tmpdir(), 'b-')), 'http://api', 's');
+    const store = new PgItemStore(pool, familyId, blobs);
+    const child = { ref: 'DET1', displayName: 'Det Kid' };
+    await store.save(accountId, child, [], []);
+    const tt = [{ day: 1, start: '09:00', end: '10:00', subject: 'Matemàtiques', subjectShort: 'MAT', room: null, teachers: ['T One'] }];
+    const abs = (status: 'justified' | 'unjustified') => ({
+      ref: 'F1', day: '2026-11-03', period: '2', subject: null, kind: 'Asistencia', status, reason: null, schoolNote: null, canJustify: status === 'unjustified',
+    });
+    const ev = { ref: 'evaluation:1', kind: 'evaluation', title: '1a avaluació', start: '2026-12-18T00:00:00+0100', end: null, allDay: true, place: null };
+    await store.saveChildDetails(accountId, child, { timetable: tt, absences: [abs('unjustified')], agenda: [ev], errors: [] });
+    await store.saveChildDetails(accountId, child, { timetable: null, absences: [abs('justified')], agenda: [ev], errors: [] });
+
+    await withFamily(pool, familyId, async (tx) => {
+      const [k] = await tx.select().from(schema.children).where(eq(schema.children.portalChildRef, 'DET1'));
+      expect(k!.timetable).toEqual(tt);
+      const a = await tx.select().from(schema.absences).where(eq(schema.absences.childId, k!.id));
+      expect(a.map((x) => [x.portalRef, x.status, x.canJustify])).toEqual([['F1', 'justified', false]]);
+      const e = await tx.select().from(schema.calendarEntries).where(eq(schema.calendarEntries.childId, k!.id));
+      expect(e.map((x) => [x.kind, x.sourceRef])).toEqual([['evaluation', 'evaluation:1']]);
+    });
+    // Another family sees nothing.
+    const other = await withFamily(pool, crypto.randomUUID(), (tx) => tx.select().from(schema.absences));
+    expect(other).toEqual([]);
   });
 });

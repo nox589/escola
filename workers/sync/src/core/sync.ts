@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import { SelectorNotDiscoveredError, ParserDriftError } from '../adapters/errors.js';
-import type { Credentials, NormalisedItem, PortalAdapter, PortalChild, SchoolDay } from '../adapters/types.js';
+import type { ChildDetails, Credentials, NormalisedItem, PortalAdapter, PortalChild, SchoolDay } from '../adapters/types.js';
 import { diffItems, shouldNotify, type DiffResult, type KnownItem } from './diff.js';
 import { guardedLogin, type GuardDecision, type LockoutStore } from './lockoutGuard.js';
 import { log } from './logger.js';
@@ -21,6 +21,8 @@ export interface ItemStore {
   pruneChildren?(accountId: string, keepRefs: string[]): Promise<number>;
   /** Replaces the school-calendar entries (holidays etc.) for this account. */
   saveSchoolCalendar?(accountId: string, days: SchoolDay[]): Promise<void>;
+  /** Stores timetable, absences and agenda for a child; null parts keep the stored data. */
+  saveChildDetails?(accountId: string, child: PortalChild, details: ChildDetails): Promise<void>;
 }
 
 export type SyncedDiff = DiffResult & { notify: boolean };
@@ -183,6 +185,19 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
         }
       }
       report.saved.push(...(await o.items.save(o.accountId, child, results, attachments)));
+
+      if (o.adapter.readChildDetails && o.items.saveChildDetails) {
+        try {
+          const details = await o.adapter.readChildDetails(page, child);
+          report.errors.push(...details.errors);
+          for (const e of details.errors) log.error({ accountId: o.accountId, section: e.section }, 'section failed');
+          await o.items.saveChildDetails(o.accountId, child, details);
+        } catch (e) {
+          if (e instanceof SelectorNotDiscoveredError) throw e;
+          report.errors.push({ section: 'childDetails', error: (e instanceof Error ? e.message : String(e)).slice(0, 200) });
+          log.error({ accountId: o.accountId, section: 'childDetails' }, 'section failed');
+        }
+      }
     }
 
     if (o.adapter.readSchoolCalendar && o.items.saveSchoolCalendar) {

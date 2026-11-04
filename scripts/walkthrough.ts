@@ -7,6 +7,7 @@
  *   pnpm tsx scripts/walkthrough.ts <path-to-api-log> [outDir]
  */
 import { mkdir, readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { chromium, type Page } from 'playwright';
 
 const APP = process.env.WEB_URL ?? 'http://localhost:8081';
@@ -49,6 +50,36 @@ async function main() {
   process.stdout.write(`screenshots in ${out}/\n`);
 }
 
+/**
+ * The mock portal has no timetable/attendance pages, so the walkthrough seeds invented details
+ * for the new children directly (as the DB owner) to exercise the child page. SEED_DB_URL enables it.
+ */
+async function seedDetails() {
+  const url = process.env.SEED_DB_URL;
+  if (!url) return false;
+  const q = (sql: string) => execFileSync('psql', [url, '-At', '-v', 'ON_ERROR_STOP=1', '-c', sql], { encoding: 'utf8' });
+  const lit = (v: string) => `'${v.replace(/'/g, "''")}'`;
+  const kids = { rows: q(`SELECT id || '|' || family_id FROM children ORDER BY created_at DESC LIMIT 2`).trim().split('\n').filter(Boolean).map((l) => ({ id: l.split('|')[0]!, family_id: l.split('|')[1]! })) };
+  const tt = (t1: string) => [
+    { day: 1, start: '09:00', end: '10:00', subject: 'Llengua catalana', subjectTranslated: 'Catalan', subjectShort: 'CAT', room: null, teachers: [t1] },
+    { day: 1, start: '10:00', end: '11:00', subject: 'Matemàtiques', subjectTranslated: 'Maths', subjectShort: 'MAT', room: null, teachers: [t1] },
+    { day: 2, start: '09:00', end: '10:00', subject: 'Educació física', subjectTranslated: 'PE', subjectShort: 'EF', room: 'Gimnàs', teachers: ['Teacher Two'] },
+    ...[3, 4, 5].map((day) => ({ day, start: '09:00', end: '13:30', subject: 'Matemàtiques', subjectTranslated: 'Maths', subjectShort: 'MAT', room: null, teachers: [t1] })),
+  ];
+  const today = new Date().toISOString().slice(0, 10);
+  for (const [i, k] of kids.rows.entries()) {
+    const f = lit(k.family_id);
+    const id = lit(k.id);
+    q(`UPDATE children SET timetable = ${lit(JSON.stringify(tt(i ? 'Teacher Three' : 'Teacher One')))}::jsonb, details_synced_at = now() WHERE id = ${id}`);
+    q(`INSERT INTO absences (family_id, child_id, portal_ref, day, period, kind, status, reason, can_justify) VALUES
+       (${f},${id},'F1','2026-09-15','1','Asistencia','justified','Malaltia',false),
+       (${f},${id},'F2',${lit(today)},'2','Asistencia','unjustified',null,true)`);
+    q(`INSERT INTO calendar_entries (family_id, child_id, title_original, title_translated, starts_at, all_day, kind, source_ref)
+       VALUES (${f},${id},'1a avaluació','1st evaluation', now() + interval '20 days', true, 'evaluation', 'evaluation:1')`);
+  }
+  return kids.rows.length > 0;
+}
+
 async function run(page: Page) {
 
   step('welcome');
@@ -82,11 +113,13 @@ async function run(page: Page) {
   await page.getByRole('heading', { name: 'Your children' }).waitFor();
   await page.getByText('CEIP Exemple · 3r B').waitFor({ timeout: 60_000 });
   await shot(page, '05-children');
+  const seeded = await seedDetails();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Not now' }).click();
 
   step('Today');
   await page.getByText('Needs you').first().waitFor({ timeout: 30_000 });
+  if (process.env.SEED_DB_URL) await page.getByText(/needs a reason/).first().waitFor();
   await shot(page, '06-today');
 
   step('Today filtered by child, then the child page');
@@ -96,6 +129,23 @@ async function run(page: Page) {
   await page.getByText("Open Alumne A's page").click();
   await page.getByText('In short').waitFor();
   await shot(page, '06c-child-page');
+  if (seeded) {
+    await page.getByText(/Teacher (One|Three)/).first().waitFor();
+    await page.getByText(/Next class:/).waitFor();
+    await page.getByText(/2 absences this year · 1 to justify/).waitFor();
+    await page.getByText('1st evaluation').first().waitFor();
+    await shot(page, '06c2-child-profile');
+    await page.getByRole('tab', { name: 'Timetable' }).click();
+    await page.getByRole('button', { name: 'Mon' }).click();
+    await page.getByText('Catalan').first().waitFor();
+    await page.getByText('Llengua catalana').first().waitFor();
+    await page.getByText(/with Teacher (One|Three)/).first().waitFor();
+    await shot(page, '06e-child-timetable');
+    await page.getByRole('tab', { name: /Attendance/ }).click();
+    await page.getByText('Not justified').first().waitFor();
+    await page.getByText('Malaltia').waitFor();
+    await shot(page, '06f-child-attendance');
+  }
   await page.getByRole('tab', { name: 'Documents' }).click();
   await page.waitForTimeout(800);
   await shot(page, '06d-child-documents');
@@ -127,6 +177,7 @@ async function run(page: Page) {
   await page.goto(APP);
   await page.getByRole('tab', { name: 'Week' }).click();
   await page.getByText('This week').first().waitFor();
+  if (process.env.SEED_DB_URL) await page.getByText(/classes · 09:00 to/).first().waitFor();
   await shot(page, '11-week');
   await page.getByLabel('Next week').click();
   await page.waitForTimeout(600);

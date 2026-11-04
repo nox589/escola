@@ -1,6 +1,17 @@
 import type { BrowserContext, Page } from 'playwright';
 import { ParserDriftError } from '../errors.js';
-import type { LoginResult, NormalisedItem, PortalAdapter, PortalChild, SchoolDay, SectionReader } from '../types.js';
+import type {
+  AgendaEvent,
+  ChildDetails,
+  LoginResult,
+  NormalisedItem,
+  PortalAbsence,
+  PortalAdapter,
+  PortalChild,
+  SchoolDay,
+  SectionReader,
+} from '../types.js';
+import type { TimetableSession } from '@escola/shared';
 import { gestibLive as G } from './selectors.js';
 
 /**
@@ -293,6 +304,207 @@ export function createGestibLiveAdapter(): PortalAdapter {
     return out;
   }
 
+
+  /** Fetches a Famílies page's HTML from inside the logged-in page (no navigation). */
+  const pageHtml = (page: Page, slug: string) =>
+    page.evaluate(async (u) => {
+      const r = await fetch(u, { credentials: 'same-origin' });
+      if (!r.ok) throw new Error(`page ${r.status}`);
+      return r.text();
+    }, G.urls.families + slug);
+
+  async function readTimetable(page: Page): Promise<TimetableSession[]> {
+    const T = G.timetable;
+    const html = await pageHtml(page, T.page);
+    const mat = T.matriculaCall.exec(html)?.[1];
+    if (!mat) return []; // no group this year: GestIB shows an empty page too
+    const raw = await page.evaluate(
+      async ({ url, mat }) => {
+        const r = await fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+          body: `codiMatricula=${encodeURIComponent(mat)}&idioma=es`,
+        });
+        if (!r.ok) throw new Error(`timetable ${r.status}`);
+        return r.json();
+      },
+      { url: T.feedUrl, mat },
+    );
+    if (!Array.isArray(raw)) throw new ParserDriftError('timetable feed not a list', T.page);
+    const sessions = (raw[0]?.sessions ?? []) as Record<string, unknown>[];
+    const hhmm = (v: unknown) => (typeof v === 'string' && /^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, '0') : null);
+    const out: TimetableSession[] = [];
+    for (const x of sessions) {
+      if (x.mostrar === 'false' || x.mostrar === false) continue;
+      const day = Number(x.codiDia);
+      const start = hhmm(x.horaSenceraInici);
+      const end = hhmm(x.horaSenceraFi);
+      if (!day || !start || !end) throw new ParserDriftError('timetable session shape', T.page);
+      const teachers = [
+        ...new Set(
+          ((x.professors ?? []) as Record<string, unknown>[])
+            .filter((p) => p.actiu !== 'false' && p.actiu !== false && p.mostrar !== 'false' && p.mostrar !== false)
+            .map((p) => String(p.professor ?? '').trim())
+            .filter(Boolean),
+        ),
+      ];
+      const long = String(x.materiaLlarg ?? '').trim();
+      const short = String(x.materia ?? '').trim();
+      out.push({
+        day,
+        start,
+        end,
+        subject: long || short,
+        subjectShort: short && short !== long ? short : null,
+        room: String(x.nomAula ?? '').trim() || null,
+        teachers,
+      });
+    }
+    return out.sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+  }
+
+  async function readAbsences(page: Page): Promise<PortalAbsence[]> {
+    const A = G.attendance;
+    const html = await pageHtml(page, A.page);
+    const call = A.paramsCall.exec(html)?.[1];
+    if (!call) return [];
+    const args = call.split(',').map((v) => v.trim().replace(/^["']|["']$/g, ''));
+    if (args.length < 8 || args.slice(0, 8).some((a) => !a)) throw new ParserDriftError('attendance params shape', A.page);
+    const [codiMatricula, any, , codiCentre, codiAlumne, , codiArbre, anyArbre] = args as [string, string, string, string, string, string, string, string];
+    const custody = !/teCustodia:\s*eval\(false\)/.test(html);
+    const minor = /esUsuariWebAlumnesMenorEdat:\s*eval\(true\)/.test(html);
+
+    // Months as GestIB lists them: Sep..Dec of `any`, then Jan..Jun of `any`+1, up to today.
+    const y = Number(any);
+    const today = new Date();
+    const months = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6]
+      .map((m) => ({ mes: m, year: m >= 9 ? y : y + 1 }))
+      .filter((m) => new Date(m.year, m.mes - 1, 1) <= today);
+
+    const rows = await page.evaluate(
+      async ({ url, months, p }) => {
+        const out: { permet: string; faltes: Record<string, string>[] }[] = [];
+        for (const m of months) {
+          const q =
+            `codiArbre=${p.codiArbre}&anyArbre=${p.anyArbre}&idioma=es&codiMatricula=${p.codiMatricula}` +
+            `&mes=${m.mes}&alumne=${p.codiAlumne}&periode=${encodeURIComponent(p.periode)}&codiCentre=${p.codiCentre}&any=${m.year}`;
+          const r = await fetch(`${url}?${q}`, { credentials: 'same-origin' });
+          if (!r.ok) throw new Error(`attendance ${r.status}`);
+          const doc = new DOMParser().parseFromString(await r.text(), 'text/xml');
+          if (doc.documentElement.nodeName.toLowerCase() === 'html') throw new Error('attendance returned html');
+          out.push({
+            permet: doc.querySelector('permetJustificacio')?.textContent ?? '',
+            faltes: Array.from(doc.querySelectorAll('falta')).map((f) => {
+              const o: Record<string, string> = {};
+              for (const a of Array.from(f.attributes)) o[a.name] = a.value;
+              o.motiuAbsencia = f.querySelector('motiuAbsencia')?.textContent ?? '';
+              return o;
+            }),
+          });
+        }
+        return out;
+      },
+      { url: A.feedUrl, months, p: { codiMatricula, codiCentre, codiAlumne, codiArbre, anyArbre, periode: A.fixedPeriode } },
+    );
+
+    const out: PortalAbsence[] = [];
+    for (const month of rows)
+      for (const f of month.faltes) {
+        const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(f.data ?? '');
+        if (!f.codiFalta || !m) throw new ParserDriftError('absence shape', A.page);
+        const day = `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`;
+        const requested = !!f.dataSolicitud;
+        const status: PortalAbsence['status'] =
+          f.justificada === 'true' ? 'justified' : f.descartada !== 'true' && requested ? 'pending' : 'unjustified';
+        const ageDays = Math.round(Math.abs(today.getTime() - new Date(`${day}T12:00:00`).getTime()) / 86_400_000);
+        out.push({
+          ref: f.codiFalta,
+          day,
+          period: f.hora || null,
+          subject: f.materia || null,
+          kind: f.tipus || 'Asistencia',
+          status,
+          reason: (f.motiuAbsencia ?? '').trim() || null,
+          schoolNote: (f.observacionsCentre ?? '').trim() || null,
+          canJustify:
+            status === 'unjustified' && month.permet === 'true' && custody && !minor && ageDays < A.justifyWindowDays,
+        });
+      }
+    return out.sort((a, b) => b.day.localeCompare(a.day));
+  }
+
+  async function readAgenda(page: Page): Promise<AgendaEvent[]> {
+    const E = G.agenda;
+    const found = await page.evaluate(
+      async ({ pageUrl, form, body, blocks }) => {
+        const r = await fetch(pageUrl, { credentials: 'same-origin' });
+        if (!r.ok) throw new Error(`activities ${r.status}`);
+        const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+        const f = d.querySelector(form);
+        if (!f) return null;
+        const action = new URL(f.getAttribute('action') ?? '', pageUrl).toString();
+        const a = await fetch(action, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+          body: `idioma=es&${body}`,
+        });
+        if (!a.ok) throw new Error(`agenda ${a.status}`);
+        const ad = new DOMParser().parseFromString(await a.text(), 'text/html');
+        const out: { block: string; events: Record<string, unknown>[] }[] = [];
+        for (const id of Object.keys(blocks)) {
+          const el = ad.getElementById(id);
+          if (!el) continue;
+          const v = JSON.parse(el.textContent || '[]');
+          const arr = Array.isArray(v) ? v : [v];
+          out.push({ block: id, events: arr.flatMap((x: { events?: Record<string, unknown>[] }) => x.events ?? []) });
+        }
+        return out;
+      },
+      { pageUrl: G.urls.families + E.page, form: E.form, body: E.formBody, blocks: E.blocks },
+    );
+    if (!found) return [];
+    const out: AgendaEvent[] = [];
+    for (const b of found) {
+      const kind = E.blocks[b.block as keyof typeof E.blocks];
+      for (const e of b.events) {
+        const start = typeof e.start === 'string' ? e.start : null;
+        if (!start || !e.title) continue;
+        out.push({
+          ref: `${kind}:${String(e.id ?? start)}`,
+          kind,
+          title: String(e.title).trim(),
+          start,
+          end: typeof e.end === 'string' ? e.end : null,
+          allDay: e.allDay !== false,
+          place: typeof e.lloc === 'string' && e.lloc.trim() ? e.lloc.trim() : null,
+        });
+      }
+    }
+    return out;
+  }
+
+  /** Reads each part independently so one failing page never wipes the others. */
+  async function readChildDetails(page: Page): Promise<ChildDetails> {
+    const errors: ChildDetails['errors'] = [];
+    const attempt = async <T,>(section: string, fn: () => Promise<T>): Promise<T | null> => {
+      try {
+        return await fn();
+      } catch (e) {
+        if (e instanceof SessionExpiredError) throw e;
+        errors.push({ section, error: (e instanceof Error ? e.message : String(e)).slice(0, 200) });
+        return null;
+      }
+    };
+    return {
+      timetable: await attempt(G.timetable.page, () => readTimetable(page)),
+      absences: await attempt(G.attendance.page, () => readAbsences(page)),
+      agenda: await attempt(G.agenda.page, () => readAgenda(page)),
+      errors,
+    };
+  }
+
   const readers = [messages, htmlBoxes('circular', G.circulars), htmlBoxes('authorisation', G.authorisations)];
 
   return {
@@ -309,6 +521,7 @@ export function createGestibLiveAdapter(): PortalAdapter {
     switchChild,
     sections: () => readers,
     readSchoolCalendar,
+    readChildDetails,
     writers: () => ({}), // writes stay off until the forms are captured and the parent confirms each one
   };
 }

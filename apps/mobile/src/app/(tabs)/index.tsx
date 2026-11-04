@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, AskBar } from '@/components/Clases';
-import { ItemCard, NeedsCard } from '@/components/ItemCard';
+import { AbsenceCard, ItemCard, NeedsCard } from '@/components/ItemCard';
 import { Banner, Chip, P } from '@/components/ui';
 import { api, type FeedItem } from '@/lib/api';
-import { relative, useChildren, useSummary } from '@/lib/hooks';
+import { relative, useAbsences, useChildren, useSummary } from '@/lib/hooks';
 import { font, space, useTheme } from '@/lib/theme';
 
 /** Today: one translated stream. "Needs you" on top, updates underneath, filtered by child. */
@@ -19,6 +19,8 @@ export default function Today() {
   const [child, setChild] = useState<string | null>(null);
   const kids = useChildren();
   const summary = useSummary();
+  const absences = useAbsences();
+  const openAbsences = (absences.data ?? []).filter((a) => a.status === 'unjustified' && (!child || a.child.id === child));
 
   const feed = useInfiniteQuery({
     queryKey: ['items', child],
@@ -105,15 +107,21 @@ export default function Today() {
             <View style={{ gap: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <H>{t('cl.needsYou')}</H>
-                {needs.length ? (
+                {needs.length + openAbsences.length ? (
                   <Text
                     style={{ backgroundColor: c.lime, color: c.ink, fontWeight: '700', fontSize: 13, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' }}
                   >
-                    {t('cl.toDo', { count: needs.length })}
+                    {t('cl.toDo', { count: needs.length + openAbsences.length })}
                   </Text>
                 ) : null}
               </View>
-              {needs.length ? needs.map((i) => <NeedsCard key={i.id} item={i} />) : !feed.isLoading ? <P muted small>{t('cl.nothingNeeds')}</P> : null}
+              {openAbsences.map((a) => (
+                <AbsenceCard key={a.id} a={a} />
+              ))}
+              {needs.map((i) => (
+                <NeedsCard key={i.id} item={i} />
+              ))}
+              {!needs.length && !openAbsences.length && !feed.isLoading ? <P muted small>{t('cl.nothingNeeds')}</P> : null}
             </View>
 
             {rest.length ? <H>{t('cl.updates')}</H> : null}

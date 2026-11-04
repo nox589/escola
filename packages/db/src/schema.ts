@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   customType,
+  date,
   index,
   integer,
   jsonb,
@@ -31,6 +32,7 @@ import {
   SUBMISSION_KINDS,
   SUBMISSION_STATES,
   SUBSCRIPTION_STATUSES,
+  type TimetableSession,
 } from '@escola/shared';
 
 /**
@@ -170,7 +172,32 @@ export const children = pgTable('children', {
   schoolName: text('school_name'),
   classLabel: text('class_label'),
   colour: text('colour'),
+  /** Weekly timetable from GestIB: TimetableSession[] (see @escola/shared). */
+  timetable: jsonb('timetable').$type<TimetableSession[]>().notNull().default([]),
+  detailsSyncedAt: timestamp('details_synced_at', { withTimezone: true }),
 });
+
+export const absences = pgTable(
+  'absences',
+  {
+    id: id(),
+    ...stamps,
+    familyId: familyRef(),
+    childId: uuid('child_id')
+      .notNull()
+      .references(() => children.id, { onDelete: 'cascade' }),
+    portalRef: text('portal_ref').notNull(),
+    day: date('day').notNull(),
+    period: text('period'),
+    subject: text('subject'),
+    kind: text('kind').notNull(),
+    status: text('status').$type<'justified' | 'pending' | 'unjustified'>().notNull(),
+    reason: text('reason'),
+    schoolNote: text('school_note'),
+    canJustify: boolean('can_justify').notNull().default(false),
+  },
+  (t) => [uniqueIndex('absences_key').on(t.childId, t.portalRef)],
+);
 
 export const items = pgTable(
   'items',
@@ -268,6 +295,8 @@ export const calendarEntries = pgTable('calendar_entries', {
   endsAt: timestamp('ends_at', { withTimezone: true }),
   allDay: boolean('all_day').notNull().default(false),
   kind: text('kind').notNull(),
+  /** Portal id for agenda events that are replaced on every sync (null for item-derived entries). */
+  sourceRef: text('source_ref'),
 });
 
 export const submissions = pgTable('submissions', {

@@ -167,4 +167,32 @@ export const gestibLive = {
     day: 'td.day', // 07-calendar.json (.old/.new = adjacent months, skip)
     types: { vacances: 'holiday', festiu: 'public_holiday', festiuLocal: 'local_holiday', noLectiu: 'non_teaching', lliureDisposicio: 'free_choice' }, // 07-calendar.json legend
   },
+  /** Per-child pages: render for the child selected on home (12-per-child-feeds.json). */
+  timetable: {
+    page: 'horari', // 09-timetable.json
+    matriculaCall: /mostraHorariAlumne\(\s*'([^']+)'/, // 12-per-child-feeds.json
+    feedUrl: '/xestibback/families/llistes/alumnat/quadrantHorariAlumnes.json', // 09-timetable.json
+  },
+  attendance: {
+    page: 'assistencia', // 08-attendance.json
+    /** pintaBotons("<codiMatricula>","<any>","<codiMatriculaParam>","<codiCentre>","<codiAlumne>","<cursAcademic>","<codiArbre>","<anyArbre>","<etapa>") */
+    paramsCall: /pintaBotons\(([^)]*)\)/, // 12-per-child-feeds.json
+    feedUrl: '/xestibback/families/alumne/llistaFaltesMatriculaAlumne.xml', // 08-attendance.json
+    fixedPeriode: '12 Desembre 2016', // 08-attendance.json (sent verbatim by GestIB)
+    justifyWindowDays: 60, // assistencia.js diesMarge (12-per-child-feeds.json)
+  },
+  agenda: {
+    page: 'activitats', // 11-replies-activities.json
+    form: 'form[id^="formHorari_"]', // 11-replies-activities.json
+    formBody: 'mostraSessionsEsplais=S', // 12-per-child-feeds.json (plus idioma)
+    /** JSON script blocks on the agenda page worth showing to parents (12-per-child-feeds.json). */
+    blocks: {
+      'data-eventAvaluacio': 'evaluation',
+      'data-eventReunioPares': 'meeting',
+      'data-eventAgenda': 'agenda',
+      'data-eventAlumne': 'student',
+      'data-eventsCentre_agenda': 'school_agenda',
+      'data-sortidesEscolars': 'trip',
+    },
+  },
 } as const;

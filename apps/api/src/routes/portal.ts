@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { maskUsername, sealCredentials } from '@escola/crypto';
-import { and, asc, desc, eq, isNull, schema, type Db } from '@escola/db';
-import { createPortalAccountRequest, updateCredentialsRequest } from '@escola/shared';
+import { and, asc, desc, eq, gte, isNotNull, isNull, schema, type Db } from '@escola/db';
+import { createPortalAccountRequest, teachersFromTimetable, updateCredentialsRequest } from '@escola/shared';
 import type { AppDeps } from '../context.js';
 import { fam, HttpError, me, requireRole } from '../app.js';
 import { asApp } from '../services/auth.js';
@@ -234,6 +234,86 @@ export async function portalRoutes(app: FastifyInstance, deps: AppDeps) {
         .orderBy(asc(schema.children.displayName)),
     ),
   );
+
+  /** Child page: teachers and timetable (from GestIB's timetable), absences, upcoming agenda. */
+  app.get('/children/:id/profile', auth, async (req) => {
+    const { id } = idParam.parse(req.params);
+    return fam(deps, req, async (db) => {
+      const [c] = await db.select().from(schema.children).where(eq(schema.children.id, id));
+      if (!c) throw new HttpError(404, 'not_found');
+      const absences = await db
+        .select()
+        .from(schema.absences)
+        .where(eq(schema.absences.childId, id))
+        .orderBy(desc(schema.absences.day));
+      const upcoming = await db
+        .select()
+        .from(schema.calendarEntries)
+        .where(
+          and(
+            eq(schema.calendarEntries.childId, id),
+            isNotNull(schema.calendarEntries.sourceRef),
+            gte(schema.calendarEntries.startsAt, new Date(Date.now() - 86400_000)),
+          ),
+        )
+        .orderBy(asc(schema.calendarEntries.startsAt))
+        .limit(10);
+      return {
+        id: c.id,
+        displayName: c.displayName,
+        classLabel: c.classLabel,
+        colour: c.colour,
+        detailsSyncedAt: c.detailsSyncedAt?.toISOString() ?? null,
+        timetable: c.timetable,
+        teachers: teachersFromTimetable(c.timetable),
+        absences: absences.map((a) => ({
+          id: a.id,
+          childId: a.childId,
+          day: a.day,
+          period: a.period,
+          subject: a.subject,
+          kind: a.kind,
+          status: a.status,
+          reason: a.reason,
+          schoolNote: a.schoolNote,
+          canJustify: a.canJustify,
+        })),
+        upcoming: upcoming.map((e) => ({
+          id: e.id,
+          title: e.titleTranslated ?? e.titleOriginal,
+          titleOriginal: e.titleOriginal,
+          startsAt: e.startsAt.toISOString(),
+          endsAt: e.endsAt?.toISOString() ?? null,
+          allDay: e.allDay,
+          kind: e.kind,
+        })),
+      };
+    });
+  });
+
+  /** Absences across the family (Today shows the ones that still need a justification). */
+  app.get('/absences', auth, async (req) => {
+    const q = z.object({ child_id: z.string().uuid().optional() }).parse(req.query);
+    return fam(deps, req, async (db) => {
+      const rows = await db
+        .select({ a: schema.absences, child: { id: schema.children.id, name: schema.children.displayName, colour: schema.children.colour } })
+        .from(schema.absences)
+        .innerJoin(schema.children, eq(schema.children.id, schema.absences.childId))
+        .where(q.child_id ? eq(schema.absences.childId, q.child_id) : undefined)
+        .orderBy(desc(schema.absences.day));
+      return rows.map(({ a, child }) => ({
+        id: a.id,
+        child,
+        day: a.day,
+        period: a.period,
+        subject: a.subject,
+        kind: a.kind,
+        status: a.status,
+        reason: a.reason,
+        canJustify: a.canJustify,
+      }));
+    });
+  });
 
   app.patch('/children/:id', auth, async (req) => {
     const { id } = idParam.parse(req.params);

@@ -42,6 +42,10 @@ function fakePortal(opts: { password: string; captcha?: boolean }) {
         return html(`<p>Error</p><form method="post" action="/passwordLoginAction"><input type="password" id="j_password"><input type="submit" id="loginpassbutton"></form>`);
       }
     }
+    if (url.href === 'https://www3.caib.es/xestibback/calendari/agenda/X')
+      return html(`<script id="data-eventsCapDeSetmana" type="application/json">[{"events":[{"start":"2026-11-07T00:00:00+0100","id":"1","title":"Cap de setmana"}]}]</script>
+        <script id="data-eventAvaluacio" type="application/json">[{"events":[{"start":"2026-12-18T00:00:00+0100","id":"77","title":"1a avaluació","allDay":true,"lloc":""}],"id":"a","className":"c"}]</script>
+        <script id="data-eventReunioPares" type="application/json">[{"events":[],"id":"r","className":"c"}]</script>`);
     if (url.href.startsWith(W)) {
       if (!loggedIn) return idpForm(); // real portal redirects to idp.caib.es/passwordLoginForm
       const slug = url.pathname.slice('/xestibback/families/'.length);
@@ -71,6 +75,36 @@ function fakePortal(opts: { password: string; captcha?: boolean }) {
         return html(shell(`<div class="box box-primary"><form id="formCalendariEscolar_X" method="post" action="calendari/calendariCentre" target="ifr"></form><div class="calendari-iframe-box"><iframe name="ifr" class="calendari-iframe" src="calendari/calendariCentre"></iframe></div></div>`));
       if (slug === 'calendari/calendariCentre')
         return html(`<div class="month-container"><table><thead><tr><th class="month-title">Desembre</th></tr></thead><tbody><tr><td class="day old">30</td><td class="day">1</td><td class="day festiu">8</td><td class="day vacances">23</td></tr></tbody></table></div><div class="month-container"><table><thead><tr><th class="month-title">Gener</th></tr></thead><tbody><tr><td class="day vacances">2</td><td class="day new vacances">3</td><td class="day noLectiu">7</td></tr></tbody></table></div>`);
+      if (slug === 'horari')
+        return html(shell(`<div id="horari-container-MAT${selected}"></div><script>mostraHorariAlumne('MAT${selected}', 'CEN', 'GR', '2026');</script>`));
+      if (slug === 'llistes/alumnat/quadrantHorariAlumnes.json') {
+        expect(new URLSearchParams(req.postData() ?? '').get('codiMatricula')).toBe(`MAT${selected}`);
+        const prof = (n: string) => ({ professor: n, actiu: 'true', mostrar: 'true', refors: 'false' });
+        return route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify([{ codiPersona: 'P', nomAlumne: 'x', sessions: [
+            { codiDia: '2', horaSenceraInici: '9:00', horaSenceraFi: '10:00', materia: 'MAT', materiaLlarg: 'Matemàtiques', nomAula: '', mostrar: 'true', professors: [prof('Teacher One')] },
+            { codiDia: '1', horaSenceraInici: '09:00', horaSenceraFi: '10:30', materia: 'CAT', materiaLlarg: 'Llengua catalana', nomAula: 'A1', mostrar: 'true', professors: [prof('Teacher One'), { ...prof('Old Teacher'), actiu: 'false' }] },
+            { codiDia: '1', horaSenceraInici: '11:00', horaSenceraFi: '12:00', materia: 'EF', materiaLlarg: 'Educació física', nomAula: '', mostrar: 'true', professors: [prof('Teacher Two')] },
+          ] }]),
+        });
+      }
+      if (slug === 'assistencia')
+        return html(shell(`<script>initAssistencia({ avui: "x", teCustodia: eval(true), esUsuariWebAlumnesMenorEdat: eval(false) });</script><script>pintaBotons("MAT${selected}", "2026", "MAT${selected}", "CEN", "ALU", "2026", "52", "2026", "14");</script>`));
+      if (slug === 'alumne/llistaFaltesMatriculaAlumne.xml') {
+        const q = url.searchParams;
+        expect(q.get('periode')).toBe('12 Desembre 2016');
+        const mes = q.get('mes');
+        const y = q.get('any');
+        const xml = (f: string) => route.fulfill({ contentType: 'text/xml', body: `<?xml version="1.0"?><xml><permetJustificacio>true</permetJustificacio>${f}</xml>` });
+        if (mes === '9') return xml(`<falta codiFalta="F1" data="15/09/${y}" materia="" hora="1" tipus="Asistencia" justificada="true" observacionsCentre="" dataSolicitud="" descartada=""><motiuAbsencia>Malaltia</motiuAbsencia></falta>`);
+        const now = new Date();
+        if (Number(mes) === now.getMonth() + 1)
+          return xml(`<falta codiFalta="F2" data="${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}" materia="MAT" hora="2" tipus="Asistencia" justificada="false" observacionsCentre="" dataSolicitud="" descartada=""><motiuAbsencia></motiuAbsencia></falta>`);
+        return xml('');
+      }
+      if (slug === 'activitats')
+        return html(shell(`<form id="formHorari_X" method="post" action="../calendari/agenda/X" target="i"><input name="idioma" value="es"></form>`));
       if (slug === 'home' || slug === 'missatges') return html(shell(''));
       return route.fulfill({ status: 404, body: '' });
     }
@@ -133,6 +167,19 @@ d('GestIB live adapter (synthetic capture-shaped pages)', () => {
       { date: `${y}-12-23`, type: 'holiday' },
       { date: `${y + 1}-01-02`, type: 'holiday' },
       { date: `${y + 1}-01-07`, type: 'non_teaching' },
+    ]);
+
+    const det = await a.readChildDetails!(page, kids[1]!);
+    expect(det.errors).toEqual([]);
+    expect(det.timetable).toEqual([
+      { day: 1, start: '09:00', end: '10:30', subject: 'Llengua catalana', subjectShort: 'CAT', room: 'A1', teachers: ['Teacher One'] },
+      { day: 1, start: '11:00', end: '12:00', subject: 'Educació física', subjectShort: 'EF', room: null, teachers: ['Teacher Two'] },
+      { day: 2, start: '09:00', end: '10:00', subject: 'Matemàtiques', subjectShort: 'MAT', room: null, teachers: ['Teacher One'] },
+    ]);
+    expect(det.absences![0]).toMatchObject({ ref: 'F2', status: 'unjustified', canJustify: true, subject: 'MAT', period: '2' });
+    expect(det.absences!.find((x) => x.ref === 'F1')).toMatchObject({ status: 'justified', reason: 'Malaltia', canJustify: false });
+    expect(det.agenda).toEqual([
+      { ref: 'evaluation:77', kind: 'evaluation', title: '1a avaluació', start: '2026-12-18T00:00:00+0100', end: null, allDay: true, place: null },
     ]);
 
     // Read-only: no mark-as-read, delete, reply or submit endpoints were ever called.

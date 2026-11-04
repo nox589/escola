@@ -5,6 +5,7 @@ import type { AppDeps } from '../context.js';
 import { fam, HttpError, me } from '../app.js';
 import { asApp } from '../services/auth.js';
 import { SCHOOL_KB } from '../services/kb.js';
+import { teachersFromTimetable } from '@escola/shared';
 
 /**
  * In-app assistant (SPEC §12): RAG over the family's own items (RLS + explicit family filter),
@@ -26,7 +27,7 @@ function system(locale: string, today: string) {
   return `You are the assistant inside Escola, an app that helps parents follow their children's school messages from GestIB (Balearic Islands). Today is ${today} (Europe/Madrid).
 
 Answer in ${LANG[locale] ?? 'English'}, briefly and concretely.
-Use ONLY the <today>, <recent_updates>, <items>, <open_actions>, <calendar> and <kb> provided. <calendar> includes school holidays and non-teaching days ("Family" entries) for the next six months, plus trips, events and deadlines. "This week" means Monday to Sunday of the week containing <today>. For "what's due" questions, list every open action with its deadline, soonest first. If the answer is genuinely not there, say so plainly and suggest checking the original message or asking the school. Never invent dates, amounts or names.
+Use ONLY the <today>, <children>, <recent_updates>, <items>, <open_actions>, <calendar> and <kb> provided. <children> holds each child's teachers (from the timetable, most hours first; the first is usually the class tutor but say "teaches the most hours" rather than claiming it), weekly timetable and absences this school year. <calendar> includes school holidays and non-teaching days ("Family" entries) for the next six months, plus trips, events and deadlines. "This week" means Monday to Sunday of the week containing <today>. For "what's due" questions, list every open action with its deadline, soonest first. If the answer is genuinely not there, say so plainly and suggest checking the original message or asking the school. Never invent dates, amounts or names.
 When you use an item, cite it as [item:<id>] right after the claim.
 You cannot send anything to the school. If the parent wants to reply, justify an absence or answer an authorisation, tell them to use the "Reply" or action button on that item, which shows them exactly what will be sent before anything goes out.`;
 }
@@ -190,7 +191,13 @@ export async function assistantRoutes(app: FastifyInstance, deps: AppDeps) {
         .leftJoin(schema.children, eq(schema.children.id, schema.items.childId))
         .orderBy(desc(schema.items.postedAt))
         .limit(40);
+      const kids = await db
+        .select({ id: schema.children.id, name: schema.children.displayName, timetable: schema.children.timetable })
+        .from(schema.children);
+      const abs = await db.select().from(schema.absences).orderBy(desc(schema.absences.day));
       return {
+        kids,
+        abs,
         recentItems,
         history: history.reverse(),
         hits,
@@ -224,7 +231,30 @@ export async function assistantRoutes(app: FastifyInstance, deps: AppDeps) {
       i = j;
     }
     const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Europe/Madrid' }).format(now);
+    const DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const childLines = ctx.kids
+      .map((k) => {
+        const teachers = teachersFromTimetable(k.timetable)
+          .map((t) => `${t.name} (${t.subjects.join(', ')}; ${t.hoursPerWeek} h/week)`)
+          .join('; ');
+        const tt = [1, 2, 3, 4, 5]
+          .map((d) => {
+            const s = k.timetable.filter((x) => x.day === d);
+            return s.length ? `${DAYS[d]} ${s.map((x) => `${x.start}-${x.end} ${x.subjectTranslated ?? x.subject}`).join(', ')}` : '';
+          })
+          .filter(Boolean)
+          .join(' | ');
+        const a = ctx.abs.filter((x) => x.childId === k.id);
+        const absText = a.length
+          ? a.map((x) => `${x.day}${x.period ? ` period ${x.period}` : ''} ${x.status}${x.reason ? ` (${x.reason})` : ''}`).join('; ')
+          : 'none recorded';
+        return `<child name="${k.name}">\nTeachers: ${teachers || 'not available'}\nTimetable: ${tt || 'not available'}\nAbsences: ${absText}\n</child>`;
+      })
+      .join('\n');
     const context = `<today>${weekday} ${day(now)} (Europe/Madrid)</today>
+<children>
+${childLines || '(none)'}
+</children>
 <recent_updates>
 ${ctx.recentItems.map((r) => `- [item:${r.id}] ${r.postedAt ? day(r.postedAt) : ''} ${r.section} ${r.child ?? 'Family'}: ${r.title ?? r.origTitle}${r.summary ? `. ${r.summary}` : ''}`).join('\n') || '(none)'}
 </recent_updates>

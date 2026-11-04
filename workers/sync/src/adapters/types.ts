@@ -1,5 +1,5 @@
 import type { BrowserContext, Page } from 'playwright';
-import type { LoginFailureCode, Section, SubmissionKind } from '@escola/shared';
+import type { LoginFailureCode, Section, SubmissionKind, TimetableSession } from '@escola/shared';
 
 /** SPEC §8.1. Any future regional portal (itaca, raices, xtec...) implements this interface. */
 export interface PortalAdapter {
@@ -14,6 +14,8 @@ export interface PortalAdapter {
   sections(): SectionReader[];
   /** Optional: the school's term calendar (holidays, non-teaching days). Read-only. */
   readSchoolCalendar?(page: Page): Promise<SchoolDay[]>;
+  /** Optional: timetable, absences and agenda for the child currently selected. Read-only. */
+  readChildDetails?(page: Page, child: PortalChild): Promise<ChildDetails>;
   writers(): Partial<Record<SubmissionKind, SectionWriter>>;
 }
 
@@ -94,4 +96,35 @@ export interface SchoolDay {
   /** YYYY-MM-DD */
   date: string;
   type: SchoolDayType;
+}
+
+export interface PortalAbsence {
+  ref: string;
+  /** YYYY-MM-DD */
+  day: string;
+  period: string | null;
+  subject: string | null;
+  kind: string;
+  status: 'justified' | 'pending' | 'unjustified';
+  reason: string | null;
+  schoolNote: string | null;
+  canJustify: boolean;
+}
+
+export interface AgendaEvent {
+  ref: string;
+  kind: string;
+  title: string;
+  start: string;
+  end: string | null;
+  allDay: boolean;
+  place: string | null;
+}
+
+/** Each part is null when that page failed, so stored data is kept rather than wiped. */
+export interface ChildDetails {
+  timetable: TimetableSession[] | null;
+  absences: PortalAbsence[] | null;
+  agenda: AgendaEvent[] | null;
+  errors: { section: string; error: string }[];
 }

@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { BackLink } from '@/components/Clases';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { BackLink, Dot } from '@/components/Clases';
 import { Icon } from '@/components/Icon';
 import { ItemCard } from '@/components/ItemCard';
 import { P, Screen } from '@/components/ui';
-import { api, type FeedItem } from '@/lib/api';
-import { shortDate, useChildren } from '@/lib/hooks';
+import { api, type Absence, type ChildProfile, type FeedItem, type TimetableSession } from '@/lib/api';
+import { dayLabel, relative, shortDate, subjectOf, useChildProfile, useChildren, weekdayName } from '@/lib/hooks';
 import { font, onColour, space, useTheme } from '@/lib/theme';
 
 interface Doc {
@@ -17,17 +17,44 @@ interface Doc {
   filename: string;
   item: { id: string; title: string; postedAt: string | null; childId: string | null };
 }
-type Tab = 'updates' | 'documents' | 'grades' | 'attendance';
+type Tab = 'updates' | 'timetable' | 'attendance' | 'documents' | 'grades';
+const TABS: Tab[] = ['updates', 'timetable', 'attendance', 'documents', 'grades'];
 
-/** A child's page: short summary, then updates, documents, grades and attendance. */
+/** Madrid weekday (1 = Monday ... 7 = Sunday) and HH:MM right now. */
+function madridNow() {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  const wd = parts.find((p) => p.type === 'weekday')?.value ?? 'Mon';
+  const day = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(wd) + 1;
+  const hh = parts.find((p) => p.type === 'hour')?.value ?? '00';
+  const mm = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  return { day, time: `${hh === '24' ? '00' : hh}:${mm}` };
+}
+
+/** The next class from now: later today, else the first class of the next school day. */
+function nextClass(tt: TimetableSession[]) {
+  if (!tt.length) return null;
+  const { day, time } = madridNow();
+  const later = tt.filter((s) => s.day === day && s.start > time).sort((a, b) => a.start.localeCompare(b.start))[0];
+  if (later) return { s: later, today: true };
+  for (let i = 1; i <= 7; i++) {
+    const d = ((day - 1 + i) % 7) + 1;
+    const first = tt.filter((s) => s.day === d).sort((a, b) => a.start.localeCompare(b.start))[0];
+    if (first) return { s: first, today: false };
+  }
+  return null;
+}
+
+/** A child's page: profile (teachers, next class, absences), then updates, timetable, attendance, documents, grades. */
 export default function ChildPage() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { t, i18n } = useTranslation();
   const c = useTheme();
   const kids = useChildren();
   const kid = kids.data?.find((k) => k.id === id);
-  const [tab, setTab] = useState<Tab>('updates');
+  const profile = useChildProfile(id);
+  const [tab, setTab] = useState<Tab>(TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'updates');
   const [q, setQ] = useState('');
+  const [allTeachers, setAllTeachers] = useState(false);
 
   const items = useQuery({
     queryKey: ['items', 'child', id],
@@ -43,18 +70,39 @@ export default function ChildPage() {
     await WebBrowser.openBrowserAsync(url);
   };
 
+  const p = profile.data;
   const all = items.data?.items ?? [];
-  const mine = all.filter((i) => i.child?.id === id);
   const monthAgo = Date.now() - 30 * 86400_000;
   const recent = all.filter((i) => i.postedAt && new Date(i.postedAt).getTime() > monthAgo).length;
   const actions = all.filter((i) => i.action).length;
+  const absences = p?.absences ?? [];
+  const openAbs = absences.filter((a) => a.status === 'unjustified').length;
+  const next = useMemo(() => nextClass(p?.timetable ?? []), [p?.timetable]);
+  const nextEvent = p?.upcoming[0];
+  const loc = i18n.language === 'en' ? 'en-GB' : i18n.language;
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'updates', label: t('cl.child.updates') },
-    { id: 'documents', label: t('cl.child.documents') },
-    { id: 'grades', label: t('cl.child.grades') },
-    { id: 'attendance', label: t('cl.child.attendance') },
-  ];
+  const tabLabel: Record<Tab, string> = {
+    updates: t('cl.child.updates'),
+    timetable: t('cl.child.timetable'),
+    attendance: t('cl.child.attendance'),
+    documents: t('cl.child.documents'),
+    grades: t('cl.child.grades'),
+  };
+  const teachers = p?.teachers ?? [];
+  const shownTeachers = allTeachers ? teachers : teachers.slice(0, 3);
+  // Subject names in the UI language for the teacher list.
+  const subjName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of p?.timetable ?? []) m.set(s.subject, subjectOf(s));
+    return m;
+  }, [p?.timetable]);
+
+  const Line = ({ icon, text, tone }: { icon: 'clock' | 'calendar' | 'check' | 'alert'; text: string; tone?: string }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Icon name={icon} size={16} color={tone ?? c.accent} />
+      <Text style={{ color: c.ink, fontSize: font.small, flex: 1, lineHeight: 20 }}>{text}</Text>
+    </View>
+  );
 
   return (
     <Screen>
@@ -71,35 +119,107 @@ export default function ChildPage() {
         </View>
       </View>
 
-      <View style={{ backgroundColor: c.accentSoft, borderRadius: 16, padding: 14, gap: 4 }}>
+      <View style={{ backgroundColor: c.accentSoft, borderRadius: 16, padding: 14, gap: 8 }}>
         <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: c.accent }}>{t('cl.child.inShort')}</Text>
-        <Text style={{ color: c.ink, fontSize: 17, fontWeight: '600', lineHeight: 23 }}>
-          {t('cl.child.summary', { actions, updates: recent })}
-        </Text>
+        <Text style={{ color: c.ink, fontSize: 17, fontWeight: '600', lineHeight: 23 }}>{t('cl.child.summary', { actions, updates: recent })}</Text>
+        {next ? (
+          <Line
+            icon="clock"
+            text={t('cl.child.nextUp', {
+              subject: subjectOf(next.s),
+              day: next.today ? t('cl.today').toLowerCase() : weekdayName(next.s.day, i18n.language),
+              time: next.s.start,
+            })}
+          />
+        ) : null}
+        {p ? (
+          <Line
+            icon={openAbs ? 'alert' : 'check'}
+            tone={openAbs ? c.warn : c.accent}
+            text={
+              !absences.length
+                ? t('cl.child.absNone')
+                : openAbs
+                  ? t('cl.child.absShort', { count: absences.length, open: openAbs })
+                  : t('cl.child.absShortAll', { count: absences.length })
+            }
+          />
+        ) : null}
+        {nextEvent ? (
+          <Line icon="calendar" text={`${nextEvent.title} · ${shortDate(nextEvent.startsAt, i18n.language)}`} />
+        ) : null}
       </View>
 
-      <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 4, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 14, padding: 4 }}>
-        {tabs.map((x) => (
+      <View style={{ backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 16, padding: 14, gap: 10 }}>
+        <View style={{ gap: 2 }}>
+          <Text accessibilityRole="header" style={{ color: c.ink, fontSize: 16, fontWeight: '700' }}>{t('cl.child.teachers')}</Text>
+          <Text style={{ color: c.muted, fontSize: 12 }}>{t('cl.child.teachersHint')}</Text>
+        </View>
+        {p && !teachers.length ? <P muted small>{t('cl.child.noTeachers')}</P> : null}
+        {shownTeachers.map((x, i) => (
+          <View key={x.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: c.accent, fontWeight: '700' }}>{x.name.trim()[0] ?? ''}</Text>
+            </View>
+            <View style={{ flex: 1, gap: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={{ color: c.ink, fontSize: 15, fontWeight: '600' }}>{x.name}</Text>
+                {i === 0 && teachers.length > 1 ? (
+                  <Text style={{ fontSize: 11, fontWeight: '700', backgroundColor: c.lime, color: c.ink, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6, overflow: 'hidden' }}>
+                    {t('cl.child.mostHours')}
+                  </Text>
+                ) : null}
+              </View>
+              <Text style={{ color: c.muted, fontSize: 13 }} numberOfLines={2}>
+                {x.subjects.map((s) => subjName.get(s) ?? s).join(', ')} · {t('cl.child.hoursWeek', { h: x.hoursPerWeek })}
+              </Text>
+            </View>
+          </View>
+        ))}
+        {teachers.length > 3 ? (
+          <Pressable onPress={() => setAllTeachers(!allTeachers)} accessibilityRole="button" style={{ minHeight: 36, justifyContent: 'center' }}>
+            <Text style={{ color: c.accent, fontWeight: '700' }}>{allTeachers ? t('cl.showLess') : t('cl.showAll', { count: teachers.length })}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={{ gap: 6 }}>
+        {TABS.map((x) => (
           <Pressable
-            key={x.id}
+            key={x}
             accessibilityRole="tab"
-            accessibilityState={{ selected: tab === x.id }}
-            onPress={() => setTab(x.id)}
-            style={{ flex: 1, minHeight: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: tab === x.id ? c.accent : 'transparent' }}
+            accessibilityState={{ selected: tab === x }}
+            onPress={() => setTab(x)}
+            style={{
+              minHeight: 40,
+              paddingHorizontal: 14,
+              borderRadius: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: tab === x ? c.accent : c.card,
+              borderWidth: 1,
+              borderColor: tab === x ? c.accent : c.line,
+            }}
           >
-            <Text style={{ color: tab === x.id ? '#FFFFFF' : c.ink, fontWeight: '600', fontSize: 13 }}>{x.label}</Text>
+            <Text style={{ color: tab === x ? '#FFFFFF' : c.ink, fontWeight: '600', fontSize: 14 }}>
+              {tabLabel[x]}
+              {x === 'attendance' && openAbs ? ` · ${openAbs}` : ''}
+            </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
       {tab === 'updates' ? (
         <View style={{ gap: 10 }}>
-          {!items.isLoading && !mine.length ? <P muted small>{t('cl.child.noUpdates')}</P> : null}
-          {mine.map((i) => (
+          {!items.isLoading && !all.length ? <P muted small>{t('cl.child.noUpdates')}</P> : null}
+          {all.map((i) => (
             <ItemCard key={i.id} item={i} />
           ))}
         </View>
       ) : null}
+
+      {tab === 'timetable' ? <Timetable p={p} /> : null}
+      {tab === 'attendance' ? <Attendance absences={absences} loaded={!!p} /> : null}
 
       {tab === 'documents' ? (
         <View style={{ gap: 10 }}>
@@ -134,8 +254,109 @@ export default function ChildPage() {
       ) : null}
 
       {tab === 'grades' ? <P muted small>{t('cl.child.gradesEmpty')}</P> : null}
-      {tab === 'attendance' ? <P muted small>{t('cl.child.attendanceEmpty')}</P> : null}
+
+      {p?.upcoming.length && (tab === 'updates' || tab === 'timetable') ? (
+        <View style={{ gap: 8 }}>
+          <Text accessibilityRole="header" style={{ color: c.ink, fontSize: 15, fontWeight: '700' }}>{t('cl.child.upcoming')}</Text>
+          {p.upcoming.slice(0, 5).map((e) => (
+            <View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 14, padding: 12 }}>
+              <Dot colour={kid?.colour} />
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={{ color: c.ink, fontSize: 15, fontWeight: '600' }}>{e.title}</Text>
+                {e.title !== e.titleOriginal ? <Text style={{ color: c.muted, fontSize: 12 }}>{e.titleOriginal}</Text> : null}
+              </View>
+              <Text style={{ color: c.ink, fontSize: 13, fontWeight: '700' }}>
+                {new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' }).format(new Date(e.startsAt))}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {p?.detailsSyncedAt ? (
+        <Text style={{ color: c.muted, fontSize: 12, textAlign: 'center' }}>{t('cl.child.synced', { when: relative(p.detailsSyncedAt, i18n.language) })}</Text>
+      ) : null}
       <View style={{ height: space.l }} />
     </Screen>
+  );
+}
+
+function Timetable({ p }: { p: ChildProfile | undefined }) {
+  const { t, i18n } = useTranslation();
+  const c = useTheme();
+  const today = madridNow().day;
+  const [day, setDay] = useState(today <= 5 ? today : 1);
+  const tt = p?.timetable ?? [];
+  if (p && !tt.length) return <P muted small>{t('cl.child.noTimetable')}</P>;
+  const sessions = tt.filter((s) => s.day === day).sort((a, b) => a.start.localeCompare(b.start));
+  return (
+    <View style={{ gap: 10 }}>
+      <View accessibilityLabel={t('cl.child.pickDay')} style={{ flexDirection: 'row', gap: 4, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 14, padding: 4 }}>
+        {[1, 2, 3, 4, 5].map((d) => (
+          <Pressable
+            key={d}
+            onPress={() => setDay(d)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: day === d }}
+            style={{ flex: 1, minHeight: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: day === d ? c.accent : d === today ? c.accentSoft : 'transparent' }}
+          >
+            <Text style={{ color: day === d ? '#FFFFFF' : c.ink, fontWeight: '600', fontSize: 13 }}>{weekdayName(d, i18n.language, 'short')}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {sessions.map((s, i) => {
+        const translated = subjectOf(s);
+        return (
+          <View key={`${s.start}-${i}`} style={{ flexDirection: 'row', gap: 12, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 14, padding: 12 }}>
+            <View style={{ width: 52 }}>
+              <Text style={{ color: c.ink, fontSize: 14, fontWeight: '700' }}>{s.start}</Text>
+              <Text style={{ color: c.muted, fontSize: 12 }}>{s.end}</Text>
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ color: c.ink, fontSize: 15, fontWeight: '600' }}>{translated}</Text>
+              {translated !== s.subject ? <Text style={{ color: c.muted, fontSize: 12 }}>{s.subject}</Text> : null}
+              {s.teachers.length || s.room ? (
+                <Text style={{ color: c.mutedOnBg, fontSize: 13 }}>
+                  {[s.teachers.length ? t('cl.child.with', { names: s.teachers.join(', ') }) : null, s.room].filter(Boolean).join(' · ')}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function Attendance({ absences, loaded }: { absences: Absence[]; loaded: boolean }) {
+  const { t, i18n } = useTranslation();
+  const c = useTheme();
+  if (loaded && !absences.length) return <P muted small>{t('cl.child.noAbsences')}</P>;
+  const tone = (s: Absence['status']) => (s === 'justified' ? c.accent : s === 'pending' ? c.muted : c.warn);
+  const bg = (s: Absence['status']) => (s === 'justified' ? c.accentSoft : s === 'pending' ? c.line : '#F6EAD3');
+  return (
+    <View style={{ gap: 10 }}>
+      {absences.length ? <Text style={{ color: c.ink, fontSize: 15, fontWeight: '700' }}>{t('cl.child.absences', { count: absences.length })}</Text> : null}
+      {absences.map((a) => (
+        <View key={a.id} style={{ backgroundColor: c.card, borderWidth: 1, borderColor: a.status === 'unjustified' ? c.warn : c.line, borderRadius: 14, padding: 12, gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ color: c.ink, fontSize: 15, fontWeight: '700', flex: 1 }}>
+              {dayLabel(a.day, i18n.language)}
+              {a.period ? <Text style={{ color: c.muted, fontWeight: '400' }}>{` · ${t('cl.child.period', { p: a.period })}`}</Text> : null}
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: tone(a.status), backgroundColor: bg(a.status), paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>
+              {t(`cl.child.${a.status}`)}
+            </Text>
+          </View>
+          {a.subject ? <Text style={{ color: c.mutedOnBg, fontSize: 13 }}>{a.subject}</Text> : null}
+          {a.reason ? <Text style={{ color: c.ink, fontSize: 14 }}>{a.reason}</Text> : null}
+          {a.status === 'unjustified' ? (
+            <Text style={{ color: c.warn, fontSize: 13, lineHeight: 18 }}>
+              {t('cl.child.needsReason')} {a.canJustify ? t('cl.child.justifyNote') : ''}
+            </Text>
+          ) : null}
+        </View>
+      ))}
+    </View>
   );
 }
