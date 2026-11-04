@@ -72,7 +72,7 @@ services:
   - type: web
     name: escola-web
     runtime: static
-    buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @escola/mobile... && cd apps/mobile && npx expo export --platform web --output-dir dist
+    buildCommand: bash scripts/build-web.sh
     staticPublishPath: apps/mobile/dist
     routes:
       - { type: rewrite, source: /*, destination: /index.html }
