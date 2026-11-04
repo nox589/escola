@@ -420,6 +420,19 @@ d('API', () => {
     expect(limited.statusCode).toBe(429);
   });
 
+  it('registers a web push subscription (once, idempotent) and validates its shape', async () => {
+    const B = await signIn('webpush@example.test');
+    const sub = { endpoint: 'https://web.push.apple.com/abc', keys: { p256dh: 'BPa1b2c3d4e5f6g7h8', auth: 'x1y2z3w4v5' } };
+    const r1 = await app.inject({ method: 'POST', url: '/v1/devices', headers: as(B.accessToken), payload: { webPush: sub, platform: 'web', locale: 'en' } });
+    expect(r1.statusCode).toBe(200);
+    const r2 = await app.inject({ method: 'POST', url: '/v1/devices', headers: as(B.accessToken), payload: { webPush: sub, platform: 'web', locale: 'es' } });
+    expect(r2.json().id).toBe(r1.json().id);
+    const bad = await app.inject({ method: 'POST', url: '/v1/devices', headers: as(B.accessToken), payload: { platform: 'web', locale: 'en' } });
+    expect(bad.statusCode).toBe(400);
+    const cfg = await app.inject({ url: '/v1/push/config' });
+    expect(cfg.statusCode).toBe(200);
+  });
+
   it('admin endpoints need the admin token and expose no content', async () => {
     expect((await app.inject({ url: '/v1/admin/sync-runs' })).statusCode).toBe(401);
     expect(

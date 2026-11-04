@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, AskBar } from '@/components/Clases';
 import { AbsenceCard, ItemCard, NeedsCard } from '@/components/ItemCard';
 import { Banner, Chip, P } from '@/components/ui';
+import { WebSetup } from '@/components/WebSetup';
 import { api, type FeedItem } from '@/lib/api';
 import { relative, useAbsences, useChildren, useSummary } from '@/lib/hooks';
 import { font, space, useTheme } from '@/lib/theme';
@@ -65,6 +66,7 @@ export default function Today() {
           <View style={{ gap: 18, marginBottom: 2 }}>
             <AppHeader />
             <AskBar hint={t('cl.ask')} />
+            <WebSetup />
             {problem ? (
               <Banner
                 tone="danger"

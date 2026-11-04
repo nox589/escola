@@ -13,7 +13,8 @@ import { createGestibAdapter } from './adapters/gestib/adapter.js';
 import { createGestibLiveAdapter } from './adapters/gestib/live.js';
 import { mockSelectors } from './adapters/gestib/selectors.mock.js';
 import { log } from './core/logger.js';
-import { ExpoPushSender } from './notify/push.js';
+import webpush from 'web-push';
+import { ExpoPushSender, RoutingPushSender, WebPushSender } from './notify/push.js';
 import {
   processEnrich,
   processNotify,
@@ -68,7 +69,16 @@ const deps: Deps = {
   llm: providers.translate,
   embedder: providers.embedder,
   blobs: createBlobStore(env, pool),
-  sender: new ExpoPushSender(env.EXPO_ACCESS_TOKEN),
+  sender: new RoutingPushSender(
+    new ExpoPushSender(env.EXPO_ACCESS_TOKEN),
+    env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
+      ? new WebPushSender(webpush, {
+          subject: env.VAPID_SUBJECT ?? 'https://escola-app-jmcd.onrender.com',
+          publicKey: env.VAPID_PUBLIC_KEY,
+          privateKey: env.VAPID_PRIVATE_KEY,
+        })
+      : null,
+  ),
   adapterFor: () => adapter,
   enqueue: {
     sync: async (job, delay) =>

@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { api } from './api';
+import { enableWebPush } from './webPush';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -15,7 +16,8 @@ Notifications.setNotificationHandler({
 
 /** Asks permission, gets the Expo push token, registers it with the API. Returns false if not possible. */
 export async function registerForPush(locale: string): Promise<boolean> {
-  if (Platform.OS === 'web' || !Device.isDevice) return false;
+  if (Platform.OS === 'web') return enableWebPush(locale).catch(() => false);
+  if (!Device.isDevice) return false;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'School updates',

@@ -22,7 +22,7 @@ export interface ItemStore {
   /** Replaces the school-calendar entries (holidays etc.) for this account. */
   saveSchoolCalendar?(accountId: string, days: SchoolDay[]): Promise<void>;
   /** Stores timetable, absences and agenda for a child; null parts keep the stored data. */
-  saveChildDetails?(accountId: string, child: PortalChild, details: ChildDetails): Promise<void>;
+  saveChildDetails?(accountId: string, child: PortalChild, details: ChildDetails): Promise<{ childId: string; newAbsences: number } | null>;
 }
 
 export type SyncedDiff = DiffResult & { notify: boolean };
@@ -53,6 +53,8 @@ export interface SyncReport {
   summary?: { openItems: number };
   errors: { section: string; error: string }[];
   saved: SavedItem[];
+  /** Children with absences that appeared since the last sync. */
+  newAbsences?: { childId: string; name: string }[];
 }
 
 export interface SessionStore {
@@ -191,7 +193,8 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
           const details = await o.adapter.readChildDetails(page, child);
           report.errors.push(...details.errors);
           for (const e of details.errors) log.error({ accountId: o.accountId, section: e.section }, 'section failed');
-          await o.items.saveChildDetails(o.accountId, child, details);
+          const r = await o.items.saveChildDetails(o.accountId, child, details);
+          if (r?.newAbsences) (report.newAbsences ??= []).push({ childId: r.childId, name: child.displayName });
         } catch (e) {
           if (e instanceof SelectorNotDiscoveredError) throw e;
           report.errors.push({ section: 'childDetails', error: (e instanceof Error ? e.message : String(e)).slice(0, 200) });

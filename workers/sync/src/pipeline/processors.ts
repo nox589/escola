@@ -10,6 +10,7 @@ import { BACKOFF_MIN } from '../core/lockoutGuard.js';
 import { log } from '../core/logger.js';
 import { runSync } from '../core/sync.js';
 import { translateLabels } from '../enrich/labels.js';
+import { inDailyWindow, notifyNewAbsences, sendDailySummaries } from '../notify/daily.js';
 import { enrichItems } from '../enrich/job.js';
 import { notifyAccountProblem, notifyBackfillSummary, notifyItems } from '../notify/job.js';
 import type { PushSender } from '../notify/push.js';
@@ -150,6 +151,10 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
         });
       else if (report.backfill)
         await notifyBackfillSummary({ pool, familyId, openActions: 0, sender: d.sender });
+      if (report.newAbsences?.length)
+        await notifyNewAbsences({ pool, familyId, sender: d.sender, children: report.newAbsences }).catch((e) =>
+          log.warn({ familyId, err: e instanceof Error ? e.message.slice(0, 120) : 'error' }, 'absence push failed'),
+        );
       await translateLabels({ pool, familyId, llm: d.llm }).catch((e) =>
         log.warn({ familyId, err: e instanceof Error ? e.message.slice(0, 120) : 'error' }, 'label translation failed'),
       );
@@ -249,5 +254,11 @@ export async function processTick(d: Deps): Promise<number> {
     await d.enqueue.sync({ familyId: r.family_id, portalAccountId: r.portal_account_id }, jitter());
     n++;
   }
+  // Morning summary, once per user per day (deduplicated in sendDailySummaries).
+  if (inDailyWindow(now))
+    for (const familyId of new Set(rows.map((r) => r.family_id)))
+      await sendDailySummaries({ pool: d.pool, familyId, sender: d.sender, now }).catch((e) =>
+        log.warn({ familyId, err: e instanceof Error ? e.message.slice(0, 120) : 'error' }, 'daily summary failed'),
+      );
   return n;
 }

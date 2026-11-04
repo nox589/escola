@@ -8,7 +8,7 @@
  */
 import { mkdir, readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { chromium, type Page } from 'playwright';
+import { chromium, devices, type Page } from 'playwright';
 
 const APP = process.env.WEB_URL ?? 'http://localhost:8081';
 const apiLog = process.argv[2]!;
@@ -33,11 +33,10 @@ async function latestToken(): Promise<string> {
 async function main() {
   await mkdir(out, { recursive: true });
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] });
-  const page = await browser.newPage({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 2,
-    locale: 'en-GB',
-  });
+  // IPHONE=1 emulates Safari on iPhone (checks the "Add to Home Screen" guide).
+  const page = await browser.newPage(
+    process.env.IPHONE ? { ...devices['iPhone 13'], locale: 'en-GB' } : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'en-GB' },
+  );
   page.on('pageerror', (e) => process.stdout.write(`  page error: ${e.message}\n`));
   try {
     await run(page);
@@ -120,6 +119,12 @@ async function run(page: Page) {
   step('Today');
   await page.getByText('Needs you').first().waitFor({ timeout: 30_000 });
   if (process.env.SEED_DB_URL) await page.getByText(/needs a reason/).first().waitFor();
+  if (process.env.IPHONE) {
+    await page.getByText('Add clases to your Home Screen').waitFor();
+    await shot(page, '06-today-iphone-setup');
+    await page.getByRole('button', { name: 'Later' }).click();
+    await page.getByText('Add clases to your Home Screen').waitFor({ state: 'detached' });
+  }
   await shot(page, '06-today');
 
   step('Today filtered by child, then the child page');

@@ -123,7 +123,7 @@ export interface PushMessage {
   title: string;
   body: string;
   collapseKey: string;
-  data: { itemId?: string; childName?: string; kind: 'item' | 'batch' };
+  data: { itemId?: string; childName?: string; kind: 'item' | 'batch' | 'daily' | 'absence'; url?: string };
 }
 
 const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);

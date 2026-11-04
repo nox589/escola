@@ -5,5 +5,23 @@ set -euo pipefail
 pnpm install --frozen-lockfile --filter @escola/mobile...
 cd apps/mobile
 npx expo export --platform web --output-dir dist
+# Installable web app: manifest, Home Screen icons, service worker (push notifications).
+cp web/* dist/
+node -e '
+const fs = require("fs");
+const p = "dist/index.html";
+let s = fs.readFileSync(p, "utf8");
+const tags = [
+  "<link rel=\"manifest\" href=\"/manifest.webmanifest\">",
+  "<link rel=\"apple-touch-icon\" href=\"/apple-touch-icon.png\">",
+  "<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">",
+  "<meta name=\"mobile-web-app-capable\" content=\"yes\">",
+  "<meta name=\"apple-mobile-web-app-title\" content=\"clases\">",
+  "<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"default\">",
+  "<meta name=\"theme-color\" content=\"#FAF7F0\">",
+].join("");
+if (!s.includes("rel=\"manifest\"")) s = s.replace("</head>", tags + "</head>");
+fs.writeFileSync(p, s);
+'
 # Deep links (e.g. /item/123) fall back to the app shell.
 cp dist/index.html dist/404.html

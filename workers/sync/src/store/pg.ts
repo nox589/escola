@@ -159,14 +159,15 @@ export class PgItemStore implements ItemStore {
     });
   }
 
-  async saveChildDetails(accountId: string, child: PortalChild, d: ChildDetails): Promise<void> {
-    await withFamily(this.pool, this.familyId, async (db) => {
+  async saveChildDetails(accountId: string, child: PortalChild, d: ChildDetails): Promise<{ childId: string; newAbsences: number } | null> {
+    return withFamily(this.pool, this.familyId, async (db) => {
       const [row] = await db
-        .select({ id: schema.children.id })
+        .select({ id: schema.children.id, synced: schema.children.detailsSyncedAt })
         .from(schema.children)
         .where(and(eq(schema.children.portalAccountId, accountId), eq(schema.children.portalChildRef, child.ref)));
-      if (!row) return;
+      if (!row) return null;
       const childId = row.id;
+      let newAbsences = 0;
       if (d.timetable)
         await db
           .update(schema.children)
@@ -178,6 +179,9 @@ export class PgItemStore implements ItemStore {
           .select({ id: schema.absences.id, ref: schema.absences.portalRef })
           .from(schema.absences)
           .where(eq(schema.absences.childId, childId));
+        const known = new Set(existing.map((x) => x.ref));
+        // Alert only for absences that appear after the first sync (not the backlog).
+        if (row.synced) newAbsences = d.absences.filter((a) => !known.has(a.ref) && a.status === 'unjustified').length;
         for (const e of existing.filter((x) => !keep.includes(x.ref)))
           await db.delete(schema.absences).where(eq(schema.absences.id, e.id));
         for (const a of d.absences) {
@@ -215,6 +219,7 @@ export class PgItemStore implements ItemStore {
             })),
           );
       }
+      return { childId, newAbsences };
     });
   }
 

@@ -212,22 +212,34 @@ export async function familyRoutes(app: FastifyInstance, deps: AppDeps) {
   });
 
   // ---- Devices & notification prefs (SPEC §7) ----
+  /** Public VAPID key for web push (the installed web app); null when web push is off. */
+  app.get('/push/config', async () => ({ vapidPublicKey: process.env.VAPID_PUBLIC_KEY || null }));
+
   app.post('/devices', auth, async (req) => {
     const body = z
       .object({
-        expoPushToken: z.string().min(10).max(200),
+        expoPushToken: z.string().min(10).max(200).optional(),
+        webPush: z
+          .object({
+            endpoint: z.string().url().max(1000),
+            keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(8).max(100) }),
+          })
+          .optional(),
         platform: z.enum(['ios', 'android', 'web']),
         locale: z.enum(LOCALES),
       })
+      .refine((b) => !!b.expoPushToken !== !!b.webPush, 'exactly one of expoPushToken or webPush')
       .parse(req.body);
+    // Web push subscriptions share the token column (prefix + JSON); the worker routes by prefix.
+    const token =
+      body.expoPushToken ??
+      `webpush:${JSON.stringify({ endpoint: body.webPush!.endpoint, keys: { p256dh: body.webPush!.keys.p256dh, auth: body.webPush!.keys.auth } })}`;
+    const values = { userId: me(req).userId, expoPushToken: token, platform: body.platform, locale: body.locale, lastSeen: new Date() };
     const [d] = await asApp(deps.pool, (db) =>
       db
         .insert(schema.devices)
-        .values({ userId: me(req).userId, ...body, lastSeen: new Date() })
-        .onConflictDoUpdate({
-          target: schema.devices.expoPushToken,
-          set: { userId: me(req).userId, ...body, lastSeen: new Date() },
-        })
+        .values(values)
+        .onConflictDoUpdate({ target: schema.devices.expoPushToken, set: values })
         .returning({ id: schema.devices.id }),
     );
     return { id: d!.id };

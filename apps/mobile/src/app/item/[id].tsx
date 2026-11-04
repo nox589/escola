@@ -38,6 +38,10 @@ export default function Item() {
   const canReply =
     enabled.data?.kinds.some((k) => k.kind === 'reply_message' && k.enabled) && it.section === 'message';
 
+  // Until sending from clases is switched on, open the same page in GestIB (the parent signs in there).
+  const GESTIB_PAGE: Record<string, string> = { message: 'missatges', circular: 'circulars', authorisation: 'autoritzacions', attendance: 'assistencia' };
+  const gestibPage = !canReply ? GESTIB_PAGE[it.section] : undefined;
+
   const setActionState = async (state: 'done_elsewhere' | 'dismissed') => {
     if (!action) return;
     await api(`/items/${it.id}/actions/${action.id}`, { body: { state } });
@@ -135,6 +139,12 @@ export default function Item() {
           <Button
             title={t('item.reply')}
             onPress={() => router.push({ pathname: '/reply/[itemId]', params: { itemId: it.id } })}
+          />
+        ) : null}
+        {gestibPage ? (
+          <Button
+            title={t('item.openGestib')}
+            onPress={() => void WebBrowser.openBrowserAsync(`https://www3.caib.es/xestibback/families/${gestibPage}`)}
           />
         ) : null}
         <Button
