@@ -112,7 +112,52 @@ export class S3BlobStore implements BlobStore {
   }
 }
 
-export function createBlobStore(env: NodeJS.ProcessEnv = process.env): BlobStore {
+/** Minimal query interface (a pg.Pool satisfies it) so this package needs no pg dependency. */
+export interface Queryable {
+  query<R = Record<string, unknown>>(text: string, values?: unknown[]): Promise<{ rows: R[] }>;
+}
+
+/**
+ * Beta storage without AWS: files live in Postgres (`blobs` table, migration 0004), so the API and
+ * the worker (separate containers) see the same files. Fine for a beta's few MB per family;
+ * switch to S3 (EU, SSE-KMS) before public launch.
+ */
+export class PgBlobStore implements BlobStore {
+  constructor(
+    private readonly db: Queryable,
+    private readonly publicBase: string,
+    private readonly secret: string,
+  ) {}
+  async put(key: string, data: Buffer, mime: string) {
+    checkKey(key);
+    await this.db.query(
+      `INSERT INTO blobs(key, data, mime) VALUES ($1, $2, $3)
+       ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, mime = EXCLUDED.mime`,
+      [key, data, mime],
+    );
+  }
+  async get(key: string) {
+    checkKey(key);
+    const r = await this.db.query<{ data: Buffer }>('SELECT data FROM blobs WHERE key = $1', [key]);
+    if (!r.rows[0]) throw new Error('blob not found');
+    return r.rows[0].data;
+  }
+  async delete(key: string) {
+    await this.db.query('DELETE FROM blobs WHERE key = $1', [key]);
+  }
+  async signedUrl(key: string, ttlSeconds = 300) {
+    checkKey(key);
+    const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
+    return `${this.publicBase}/v1/files/${key}?exp=${exp}&sig=${signLocal(this.secret, key, exp)}`;
+  }
+}
+
+export function createBlobStore(env: NodeJS.ProcessEnv = process.env, db?: Queryable): BlobStore {
+  if (env.BLOB_STORE === 'postgres') {
+    if (!db) throw new Error('BLOB_STORE=postgres needs a database connection');
+    if (!env.BLOB_SECRET) throw new Error('BLOB_SECRET is required with BLOB_STORE=postgres');
+    return new PgBlobStore(db, env.PUBLIC_API_URL ?? 'http://localhost:3000', env.BLOB_SECRET);
+  }
   if (env.S3_BUCKET) {
     return new S3BlobStore(env.S3_BUCKET, {
       region: env.S3_REGION ?? 'eu-south-2',

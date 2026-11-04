@@ -31,7 +31,8 @@ if (!env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 if (env.KMS_PROVIDER && env.KMS_PROVIDER !== 'local')
   throw new Error('Only KMS_PROVIDER=local is implemented (see OPEN_QUESTIONS)');
 if (!env.LOCAL_KMS_KEY) throw new Error('LOCAL_KMS_KEY is required');
-if (env.NODE_ENV === 'production') throw new Error('Configure a cloud KMS before production');
+if (env.NODE_ENV === 'production')
+  throw new Error('Configure a cloud KMS before production (beta runs with NODE_ENV=beta)');
 
 const connection: ConnectionOptions = { url: env.REDIS_URL ?? 'redis://localhost:6379' };
 const queues = Object.fromEntries(
@@ -56,13 +57,14 @@ const adapter = createGestibAdapter({
 
 const providers = createProviders(llmConfigFromEnv());
 const opts = { removeOnComplete: 1000, removeOnFail: 5000 };
+const pool = createPool(env.DATABASE_URL);
 const deps: Deps = {
-  pool: createPool(env.DATABASE_URL),
+  pool,
   browser: getBrowser,
   kms: new LocalDevKms(env.LOCAL_KMS_KEY),
   llm: providers.translate,
   embedder: providers.embedder,
-  blobs: createBlobStore(),
+  blobs: createBlobStore(env, pool),
   sender: new ExpoPushSender(env.EXPO_ACCESS_TOKEN),
   adapterFor: () => adapter,
   enqueue: {

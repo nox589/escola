@@ -1,4 +1,22 @@
-# Render Blueprint: everything in Frankfurt (EU). Secrets marked sync:false are entered once in the dashboard.
+# Render Blueprint for the BETA: everything in Frankfurt (EU), no AWS account needed.
+# - Files (attachments, receipts) live in Postgres (BLOB_STORE=postgres).
+# - Credentials use the local envelope key (KMS_PROVIDER=local); move to AWS KMS before public launch.
+# - Translations run on the offline fake until LLM_PROVIDER=bedrock + model ids are set.
+# Secrets marked sync:false are entered once in the dashboard when the Blueprint is created.
+
+envVarGroups:
+  - name: escola-shared
+    envVars:
+      - { key: NODE_ENV, value: beta }
+      - { key: KMS_PROVIDER, value: local }
+      - { key: LOCAL_KMS_KEY, sync: false }
+      - { key: BLOB_STORE, value: postgres }
+      - { key: BLOB_SECRET, generateValue: true }
+      - { key: LLM_PROVIDER, value: fake }
+      - { key: ALLOW_REAL_PORTAL, value: 'true' }
+      - { key: ENABLED_WRITERS, value: '' }
+      - { key: PUBLIC_API_URL, sync: false }
+
 databases:
   - name: escola-db
     region: frankfurt
@@ -23,24 +41,17 @@ services:
     dockerfilePath: ./deploy/Dockerfile.api
     healthCheckPath: /health
     envVars:
+      - fromGroup: escola-shared
       - key: DATABASE_URL
         fromDatabase: { name: escola-db, property: connectionString }
       - key: REDIS_URL
         fromService: { type: keyvalue, name: escola-redis, property: connectionString }
       - { key: JWT_SECRET, generateValue: true }
-      - { key: KMS_PROVIDER, value: local }
-      - { key: LOCAL_KMS_KEY, sync: false }
-      - { key: LLM_PROVIDER, value: fake }
+      - { key: ADMIN_TOKEN, generateValue: true }
       - { key: APP_URL, sync: false }
-      - { key: PUBLIC_API_URL, sync: false }
       - { key: EMAIL_PROVIDER, value: console }
       - { key: EMAIL_API_KEY, sync: false }
       - { key: EMAIL_FROM, sync: false }
-      - { key: ADMIN_TOKEN, generateValue: true }
-      - { key: ALLOW_REAL_PORTAL, value: 'true' }
-      - { key: ENABLED_WRITERS, value: '' }
-      - { key: S3_BUCKET, sync: false }
-      - { key: S3_REGION, value: eu-south-2 }
 
   - type: worker
     name: escola-worker
@@ -49,25 +60,18 @@ services:
     plan: standard
     dockerfilePath: ./deploy/Dockerfile.worker
     envVars:
+      - fromGroup: escola-shared
       - key: DATABASE_URL
         fromDatabase: { name: escola-db, property: connectionString }
       - key: REDIS_URL
         fromService: { type: keyvalue, name: escola-redis, property: connectionString }
-      - { key: KMS_PROVIDER, value: local }
-      - { key: LOCAL_KMS_KEY, sync: false }
-      - { key: LLM_PROVIDER, value: fake }
-      - { key: ALLOW_REAL_PORTAL, value: 'true' }
-      - { key: ENABLED_WRITERS, value: '' }
       - { key: SYNC_CONCURRENCY, value: '2' }
       - { key: SYNC_LOGIN_RATE_PER_MIN, value: '2' }
       - { key: EXPO_ACCESS_TOKEN, sync: false }
-      - { key: S3_BUCKET, sync: false }
-      - { key: S3_REGION, value: eu-south-2 }
 
   - type: web
     name: escola-web
     runtime: static
-    region: frankfurt
     buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @escola/mobile... && cd apps/mobile && npx expo export --platform web --output-dir dist
     staticPublishPath: apps/mobile/dist
     routes:

@@ -21,14 +21,15 @@ const submitQ = new Queue(QUEUES.submit, { connection });
 const providers = createProviders(llmConfigFromEnv());
 const jwtSecret = required('JWT_SECRET');
 
+const pool = createPool(required('DATABASE_URL'));
 const app = await buildApp({
-  pool: createPool(required('DATABASE_URL')),
+  pool,
   kms: createKmsWrapper({
     provider: (env.KMS_PROVIDER as 'local') ?? 'local',
     localKey: env.LOCAL_KMS_KEY,
     nodeEnv: env.NODE_ENV,
   }),
-  blobs: createBlobStore(),
+  blobs: createBlobStore(process.env, pool),
   llm: providers.translate,
   chatLlm: providers.chat,
   embedder: providers.embedder,
@@ -52,7 +53,7 @@ const app = await buildApp({
   config: {
     jwtSecret,
     appUrl: env.APP_URL ?? 'escola://',
-    blobSecret: jwtSecret,
+    blobSecret: env.BLOB_SECRET || jwtSecret,
     enabledWriters: (env.ENABLED_WRITERS || (env.ALLOW_REAL_PORTAL === 'true' ? '' : 'reply_message'))
       .split(',')
       .filter(Boolean),

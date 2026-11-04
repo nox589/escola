@@ -39,13 +39,13 @@ d('database (TEST_DATABASE_URL)', () => {
   });
 
   it('migrates up, down, and up again', async () => {
-    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls', '0002_auth_and_helpers', '0003_role_membership']);
-    expect(await migrateDown(admin)).toEqual(['0003_role_membership', '0002_auth_and_helpers', '0001_rls', '0000_init']);
+    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls', '0002_auth_and_helpers', '0003_role_membership', '0004_blobs']);
+    expect(await migrateDown(admin)).toEqual(['0004_blobs', '0003_role_membership', '0002_auth_and_helpers', '0001_rls', '0000_init']);
     const t = await admin.query(
       `SELECT count(*)::int n FROM pg_tables WHERE schemaname='public' AND tablename='items'`,
     );
     expect(t.rows[0].n).toBe(0);
-    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls', '0002_auth_and_helpers', '0003_role_membership']);
+    expect(await migrateUp(admin)).toEqual(['0000_init', '0001_rls', '0002_auth_and_helpers', '0003_role_membership', '0004_blobs']);
   });
 
   it('RLS blocks cross-family reads and writes', async () => {
