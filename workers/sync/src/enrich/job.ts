@@ -16,8 +16,11 @@ export interface EnrichResult {
 /**
  * SPEC §8.5: translate into every guardian's locale, classify, cross-check the deadline against the
  * deterministic parser, write actions + calendar entries, and embed for the assistant.
- * Idempotent per item version via items.enriched_hash.
+ * Idempotent per item version AND model via items.enriched_hash (`<contentHash>@<model>`),
+ * so switching the AI model re-processes items done by the previous one.
  */
+export const enrichMark = (contentHash: string, model: string) => `${contentHash}@${model}`;
+
 export async function enrichItems(o: {
   pool: pg.Pool;
   familyId: string;
@@ -47,7 +50,7 @@ export async function enrichItems(o: {
 
   const results: EnrichResult[] = [];
   for (const { item, childName } of items) {
-    if (item.enrichedHash === item.contentHash) continue;
+    if (item.enrichedHash === enrichMark(item.contentHash, o.llm.model)) continue;
     try {
       // 1. Translate + classify per locale (classification taken from the first).
       const per = [] as { lang: Locale; e: Awaited<ReturnType<typeof enrichItem>> }[];
@@ -160,7 +163,7 @@ export async function enrichItems(o: {
         }
         await db
           .update(schema.items)
-          .set({ enrichedHash: item.contentHash })
+          .set({ enrichedHash: enrichMark(item.contentHash, o.llm.model) })
           .where(eq(schema.items.id, item.id));
       });
 

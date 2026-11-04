@@ -141,7 +141,7 @@ d('pipeline', () => {
       acc: (await tx.select().from(schema.portalAccounts))[0]!,
     }));
     expect(data.items).toHaveLength(3);
-    expect(data.items.every((i) => i.enrichedHash === i.contentHash)).toBe(true);
+    expect(data.items.every((i) => i.enrichedHash?.startsWith(`${i.contentHash}@`))).toBe(true);
     expect(data.tr).toHaveLength(3);
     expect(data.items.every((i) => i.originalTitle && i.originalBodyText)).toBe(true); // original kept
     const trip = data.items.find((i) => i.portalItemRef === 'circ-1')!;

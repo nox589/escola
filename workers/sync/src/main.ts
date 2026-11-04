@@ -6,7 +6,7 @@ import { createServer } from 'node:http';
 import { Queue, Worker, type ConnectionOptions } from 'bullmq';
 import { chromium, type Browser } from 'playwright';
 import { LocalDevKms } from '@escola/crypto';
-import { createPool } from '@escola/db';
+import { createPool, schema, withFamily } from '@escola/db';
 import { createProviders, llmConfigFromEnv } from '@escola/llm';
 import { createBlobStore } from '@escola/storage';
 import { createGestibAdapter } from './adapters/gestib/adapter.js';
@@ -26,6 +26,7 @@ import {
   type SyncJob,
 } from './pipeline/processors.js';
 import { QUEUES } from './pipeline/queues.js';
+import { enrichMark } from './enrich/job.js';
 import { processSubmit } from './submit/job.js';
 
 const env = process.env;
@@ -107,6 +108,31 @@ new Worker<SubmitJob>(QUEUES.submit, (j) => processSubmit(deps, j.data), { conne
 new Worker(QUEUES.tick, () => processTick(deps), { connection });
 
 await queues.tick.upsertJobScheduler('tick-every-5-min', { every: 5 * 60_000 }, { name: 'tick' });
+
+/** Re-process items enriched by a different AI model (e.g. the offline placeholder). No portal access. */
+async function reprocessStaleEnrichment() {
+  const client = await pool.connect();
+  let families: string[];
+  try {
+    await client.query('SET ROLE escola_app');
+    families = [...new Set((await client.query('SELECT family_id FROM accounts_due_for_sync()')).rows.map((r) => r.family_id as string))];
+    await client.query('RESET ROLE');
+  } finally {
+    client.release();
+  }
+  let total = 0;
+  for (const familyId of families) {
+    const rows = await withFamily(pool, familyId, (db) =>
+      db.select({ id: schema.items.id, c: schema.items.contentHash, e: schema.items.enrichedHash }).from(schema.items),
+    );
+    const stale = rows.filter((r) => r.e !== enrichMark(r.c, providers.translate.model)).map((r) => r.id);
+    for (let i = 0; i < stale.length; i += 10)
+      await deps.enqueue.enrich({ familyId, itemIds: stale.slice(i, i + 10), notifyIds: [], backfill: false });
+    total += stale.length;
+  }
+  if (total) log.info({ items: total, model: providers.translate.model }, 'queued re-processing with current AI model');
+}
+reprocessStaleEnrichment().catch((e) => log.error({ err: e instanceof Error ? e.name : 'unknown' }, 'reprocess failed'));
 log.info({ mock: useMock, llm: providers.translate.name }, 'worker started');
 
 // Hosts that only run "web services" (e.g. Render via its API) need an open port and a health check.

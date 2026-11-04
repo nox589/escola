@@ -115,6 +115,17 @@ export async function assistantRoutes(app: FastifyInstance, deps: AppDeps) {
         .where(eq(schema.embeddings.familyId, p.familyId)) // explicit filter on top of RLS
         .orderBy(cosineDistance(schema.embeddings.vector, qv!))
         .limit(8);
+      // Always include the most recent items too: without a semantic embedder (demo setup) the
+      // search above is keyword-based, and "what's on this week?" has no keywords to match.
+      const recent = await db
+        .select({ itemId: schema.embeddings.itemId, text: schema.embeddings.text, d: sql<number>`1` })
+        .from(schema.embeddings)
+        .innerJoin(schema.items, eq(schema.items.id, schema.embeddings.itemId))
+        .where(eq(schema.embeddings.familyId, p.familyId))
+        .orderBy(desc(schema.items.postedAt))
+        .limit(16);
+      const seenText = new Set(hits.map((h) => h.text));
+      for (const r of recent) if (!seenText.has(r.text)) (seenText.add(r.text), hits.push(r));
       const itemIds = [...new Set(hits.map((h) => h.itemId))];
       const meta = itemIds.length
         ? await db
