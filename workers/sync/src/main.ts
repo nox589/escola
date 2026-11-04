@@ -2,6 +2,7 @@
  * Worker process: BullMQ consumers for sync / enrich / notify / submit plus the scheduler tick.
  *   pnpm --filter @escola/sync-worker dev
  */
+import { createServer } from 'node:http';
 import { Queue, Worker, type ConnectionOptions } from 'bullmq';
 import { chromium, type Browser } from 'playwright';
 import { LocalDevKms } from '@escola/crypto';
@@ -106,6 +107,14 @@ new Worker(QUEUES.tick, () => processTick(deps), { connection });
 
 await queues.tick.upsertJobScheduler('tick-every-5-min', { every: 5 * 60_000 }, { name: 'tick' });
 log.info({ mock: useMock, llm: providers.translate.name }, 'worker started');
+
+// Hosts that only run "web services" (e.g. Render via its API) need an open port and a health check.
+if (env.PORT) {
+  createServer((req, res) => {
+    res.writeHead(req.url === '/health' ? 200 : 404, { 'content-type': 'application/json' });
+    res.end(req.url === '/health' ? '{"ok":true}' : '{}');
+  }).listen(Number(env.PORT), '0.0.0.0');
+}
 
 const shutdown = async () => {
   await browser?.close().catch(() => undefined);
