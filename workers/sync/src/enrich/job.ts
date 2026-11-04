@@ -19,7 +19,19 @@ export interface EnrichResult {
  * Idempotent per item version AND model via items.enriched_hash (`<contentHash>@<model>`),
  * so switching the AI model re-processes items done by the previous one.
  */
-export const enrichMark = (contentHash: string, model: string) => `${contentHash}@${model}`;
+export const enrichMark = (contentHash: string, model: string) =>
+  `${contentHash}@${model}#${ENRICH_PROMPT_VERSION}`;
+
+/** Which child an item is about, from the names in its text. null = family-wide / unclear. */
+export function attributeChild(text: string, kids: { id: string; name: string }[]): string | null {
+  const norm = (x: string) => ` ${x.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, ' ')} `;
+  const t = norm(text);
+  const hits = kids.filter((k) => {
+    const first = k.name.trim().split(/\s+/)[0] ?? '';
+    return (first.length >= 3 && t.includes(norm(first))) || t.includes(norm(k.name));
+  });
+  return hits.length === 1 ? hits[0]!.id : null;
+}
 
 export async function enrichItems(o: {
   pool: pg.Pool;
@@ -29,7 +41,7 @@ export async function enrichItems(o: {
   embedder: Embedder;
 }): Promise<EnrichResult[]> {
   if (!o.itemIds.length) return [];
-  const { items, locales, childNames } = await withFamily(o.pool, o.familyId, async (db) => {
+  const { items, locales, childNames, kids } = await withFamily(o.pool, o.familyId, async (db) => {
     const items = await db
       .select({ item: schema.items, childName: schema.children.displayName })
       .from(schema.items)
@@ -39,11 +51,12 @@ export async function enrichItems(o: {
       .select({ locale: schema.users.locale })
       .from(schema.familyMembers)
       .innerJoin(schema.users, eq(schema.users.id, schema.familyMembers.userId));
-    const kids = await db.select({ name: schema.children.displayName }).from(schema.children);
+    const kids = await db.select({ id: schema.children.id, name: schema.children.displayName }).from(schema.children);
     return {
       items,
       locales: [...new Set(members.map((m) => m.locale as Locale))].sort((a) => (a === 'en' ? -1 : 0)),
       childNames: kids.map((k) => k.name),
+      kids,
     };
   });
   const targetLocales: Locale[] = locales.length ? locales : ['en'];
@@ -59,7 +72,12 @@ export async function enrichItems(o: {
           lang,
           e: await enrichItem(
             o.llm,
-            { title: item.originalTitle, body: item.originalBodyText, section: item.section },
+            {
+              title: item.originalTitle,
+              body: item.originalBodyText,
+              section: item.section,
+              postedAt: (item.postedAt ?? item.firstSeenAt)?.toISOString(),
+            },
             lang,
             { childNames },
           ),
@@ -76,6 +94,10 @@ export async function enrichItems(o: {
       const source = fromPortal ? 'portal_field' : parsed ? 'parsed' : primary.deadline ? 'llm' : null;
       const checkOriginal = check === 'mismatch' || check === 'llm_only' || primary.confidence < 0.6;
       const needsAction = primary.needs_action || item.section === 'authorisation';
+      // Account-wide sections (messages, authorisations) are attributed by name; others keep their child.
+      const named = attributeChild(`${item.originalTitle}\n${item.originalBodyText}`, kids);
+      const childId =
+        named ?? (item.section === 'message' || item.section === 'authorisation' ? null : item.childId);
 
       await withFamily(o.pool, o.familyId, async (db) => {
         for (const { lang, e } of per) {
@@ -105,11 +127,10 @@ export async function enrichItems(o: {
               },
             });
         }
-        if (primary.source_lang)
-          await db
-            .update(schema.items)
-            .set({ originalLang: primary.source_lang })
-            .where(eq(schema.items.id, item.id));
+        await db
+          .update(schema.items)
+          .set({ originalLang: primary.source_lang || item.originalLang, childId })
+          .where(eq(schema.items.id, item.id));
 
         // 3. Actions: keep a single open action per item, refreshed on each new version.
         await db
@@ -128,10 +149,22 @@ export async function enrichItems(o: {
 
         // 4. Calendar: deadlines appear in the calendar.
         await db.delete(schema.calendarEntries).where(eq(schema.calendarEntries.itemId, item.id));
+        if (primary.event_date && primary.event_date !== deadline) {
+          await db.insert(schema.calendarEntries).values({
+            familyId: o.familyId,
+            childId,
+            itemId: item.id,
+            titleOriginal: item.originalTitle,
+            titleTranslated: primary.title,
+            startsAt: new Date(`${primary.event_date}T00:00:00+01:00`),
+            allDay: true,
+            kind: 'event',
+          });
+        }
         if (deadline && needsAction) {
           await db.insert(schema.calendarEntries).values({
             familyId: o.familyId,
-            childId: item.childId,
+            childId,
             itemId: item.id,
             titleOriginal: item.originalTitle,
             titleTranslated: primary.title,

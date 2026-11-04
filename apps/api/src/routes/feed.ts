@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { and, asc, desc, eq, gte, ilike, isNotNull, lt, lte, or, schema, sql } from '@escola/db';
+import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, lte, or, schema, sql } from '@escola/db';
 import { ACTION_STATES, itemsQuery } from '@escola/shared';
 import type { AppDeps } from '../context.js';
 import { fam, HttpError, me } from '../app.js';
@@ -29,7 +29,8 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
     const locale = await userLocale(deps, p.userId);
     return fam(deps, req, async (db) => {
       const conds = [];
-      if (q.child_id) conds.push(eq(schema.items.childId, q.child_id));
+      // Family-wide items (no child) show under every child.
+      if (q.child_id) conds.push(or(eq(schema.items.childId, q.child_id), isNull(schema.items.childId))!);
       if (q.section) conds.push(eq(schema.items.section, q.section));
       if (q.since) conds.push(gte(schema.items.firstSeenAt, new Date(q.since)));
       if (q.needs_action) conds.push(isNotNull(schema.itemActions.id));
@@ -190,7 +191,8 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
       .parse(req.query);
     return fam(deps, req, async (db) => {
       const conds = [];
-      if (q.child_id) conds.push(eq(schema.items.childId, q.child_id));
+      // Family-wide items (no child) show under every child.
+      if (q.child_id) conds.push(or(eq(schema.items.childId, q.child_id), isNull(schema.items.childId))!);
       if (q.q)
         conds.push(
           or(ilike(schema.attachments.filename, `%${q.q}%`), ilike(schema.items.originalTitle, `%${q.q}%`))!,
@@ -252,7 +254,9 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
           and(
             gte(schema.calendarEntries.startsAt, new Date(q.from)),
             lte(schema.calendarEntries.startsAt, new Date(q.to)),
-            q.child_id ? eq(schema.calendarEntries.childId, q.child_id) : undefined,
+            q.child_id
+              ? or(eq(schema.calendarEntries.childId, q.child_id), isNull(schema.calendarEntries.childId))
+              : undefined,
           ),
         )
         .orderBy(asc(schema.calendarEntries.startsAt));

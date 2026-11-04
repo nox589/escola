@@ -7,7 +7,7 @@ import glossary from './glossary.json' with { type: 'json' };
  * SPEC §8.5 enrichment: detect language, translate title/body into a guardian's locale, summary
  * (<=140 chars), classify needs_action + action kind + deadline + confidence. One call per locale.
  */
-export const ENRICH_PROMPT_VERSION = 'enrich-v1';
+export const ENRICH_PROMPT_VERSION = 'enrich-v2';
 
 const LANG_NAMES: Record<string, string> = {
   en: 'English',
@@ -35,6 +35,12 @@ export const enrichmentSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}/)
     .nullable(),
   confidence: z.number().min(0).max(1),
+  event_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}/)
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
 });
 export type Enrichment = z.infer<typeof enrichmentSchema>;
 
@@ -49,6 +55,7 @@ For the item given, return ONLY a JSON object, no prose, with these keys:
 - "action_kind": one of ${ACTION_KINDS.join(', ')} or null
 - "deadline": ISO date (YYYY-MM-DD) by which the parent must act, or null. Event dates are NOT deadlines unless the parent must act by then.
 - "confidence": 0 to 1, how sure you are about needs_action and deadline
+- "event_date": ISO date (YYYY-MM-DD) of the main event the item is about (trip, excursion, meeting, festival, day off, celebration), or null if there is none. Use the posting context to pick the year.
 
 Use this glossary for consistent terms (Catalan → meaning): ${Object.entries(glossary)
   .map(([k, v]) => `${k} = ${v}`)
@@ -88,7 +95,7 @@ function extractJson(s: string): unknown {
 
 export async function enrichItem(
   llm: LlmProvider,
-  item: { title: string; body: string; section: string },
+  item: { title: string; body: string; section: string; postedAt?: string },
   targetLang: Locale,
   opts: { childNames?: string[] } = {},
 ): Promise<Enrichment> {
@@ -97,6 +104,7 @@ export async function enrichItem(
   const user = `<target_lang>${targetLang}</target_lang> (${LANG_NAMES[targetLang] ?? targetLang})
 <item>
 <section>${item.section}</section>
+${item.postedAt ? `<posted>${item.postedAt.slice(0, 10)}</posted>\n` : ''}
 <title>${t.text}</title>
 <body>${b.text}</body>
 </item>`;

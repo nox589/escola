@@ -154,7 +154,7 @@ export async function processSync(d: Deps, job: SyncJob): Promise<{ result: stri
         })
         .where(eq(schema.syncRuns.id, run!.id)),
     );
-    log.info({ portalAccountId, result }, 'sync finished');
+    log.info({ portalAccountId, result, children: report.children.length, counts: report.counts, errors: report.errors.map((e) => e.section) }, 'sync finished');
     return { result };
   } catch (e) {
     result = e instanceof SelectorNotDiscoveredError ? 'selectors_not_discovered' : 'error';

@@ -67,6 +67,10 @@ function fakePortal(opts: { password: string; captcha?: boolean }) {
       if (slug === 'circulars/veureDocumentAdjunt.do') return route.fulfill({ contentType: 'application/pdf', body: '%PDF-1.4' });
       if (slug === 'autoritzacions')
         return html(shell(`<div id="autoritzacio_Z9" class="box box-primary"><div class="box-body"><h4 class="box-title"><a href="#collapse_Z9"><span class="text-green">01/10/2026 - Trip</span></a></h4></div><div id="collapse_Z9" class="panel-collapse collapse"><span><b>AUTORITZADA</b></span><div class="text-enriquit">Details</div></div></div>`));
+      if (slug === 'calendariEscolar')
+        return html(shell(`<div class="box box-primary"><form id="formCalendariEscolar_X" method="post" action="calendari/calendariCentre" target="ifr"></form><div class="calendari-iframe-box"><iframe name="ifr" class="calendari-iframe" src="calendari/calendariCentre"></iframe></div></div>`));
+      if (slug === 'calendari/calendariCentre')
+        return html(`<div class="month-container"><table><thead><tr><th class="month-title">Desembre</th></tr></thead><tbody><tr><td class="day old">30</td><td class="day">1</td><td class="day festiu">8</td><td class="day vacances">23</td></tr></tbody></table></div><div class="month-container"><table><thead><tr><th class="month-title">Gener</th></tr></thead><tbody><tr><td class="day vacances">2</td><td class="day new vacances">3</td><td class="day noLectiu">7</td></tr></tbody></table></div>`);
       if (slug === 'home' || slug === 'missatges') return html(shell(''));
       return route.fulfill({ status: 404, body: '' });
     }
@@ -121,6 +125,15 @@ d('GestIB live adapter (synthetic capture-shaped pages)', () => {
 
     const z = await auths!.read(page);
     expect(z[0]).toMatchObject({ portalRef: 'auth-Z9', extra: { status: 'AUTORITZADA' } });
+
+    const cal = await a.readSchoolCalendar!(page);
+    const y = new Date().getMonth() >= 7 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+    expect(cal).toEqual([
+      { date: `${y}-12-08`, type: 'public_holiday' },
+      { date: `${y}-12-23`, type: 'holiday' },
+      { date: `${y + 1}-01-02`, type: 'holiday' },
+      { date: `${y + 1}-01-07`, type: 'non_teaching' },
+    ]);
 
     // Read-only: no mark-as-read, delete, reply or submit endpoints were ever called.
     expect(p.calls.filter((x) => /Llegit|Vista|Esborra|envia|marca/i.test(x))).toEqual([]);

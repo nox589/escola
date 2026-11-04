@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { and, eq } from '@escola/db';
+import { and, eq, isNull } from '@escola/db';
 import type pg from 'pg';
 import { schema, withFamily } from '@escola/db';
 import type { BlobStore } from '@escola/storage';
-import type { PortalChild } from '../adapters/types.js';
+import type { PortalChild, SchoolDay } from '../adapters/types.js';
 import type { KnownItem } from '../core/diff.js';
 import type { GuardAccount, LockoutStore } from '../core/lockoutGuard.js';
 import type { ItemStore, SavedItem, StoredAttachment, SyncedDiff } from '../core/sync.js';
@@ -111,6 +111,33 @@ export class PgItemStore implements ItemStore {
         .from(schema.portalAccounts)
         .where(eq(schema.portalAccounts.id, accountId));
       return !r?.last;
+    });
+  }
+
+  /** School term calendar: replaced wholesale on every sync (kind 'school', no item). */
+  async saveSchoolCalendar(_accountId: string, days: SchoolDay[]): Promise<void> {
+    const label: Record<SchoolDay['type'], [string, string]> = {
+      holiday: ['Vacances', 'School holiday'],
+      public_holiday: ['Festiu', 'Public holiday'],
+      local_holiday: ['Festiu local', 'Local holiday'],
+      non_teaching: ['Dia no lectiu', 'No school (non-teaching day)'],
+      free_choice: ['Dia de lliure disposició', 'No school (school free day)'],
+    };
+    await withFamily(this.pool, this.familyId, async (db) => {
+      await db
+        .delete(schema.calendarEntries)
+        .where(and(eq(schema.calendarEntries.kind, 'school'), isNull(schema.calendarEntries.itemId)));
+      if (!days.length) return;
+      await db.insert(schema.calendarEntries).values(
+        days.map((d) => ({
+          familyId: this.familyId,
+          titleOriginal: label[d.type][0],
+          titleTranslated: label[d.type][1],
+          startsAt: new Date(`${d.date}T00:00:00+01:00`),
+          allDay: true,
+          kind: 'school',
+        })),
+      );
     });
   }
 

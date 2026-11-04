@@ -158,4 +158,13 @@ export const gestibLive = {
     body: 'div.text-enriquit', // 05-authorisations.json
     attachment: 'a[href*="veureDocumentAdjunt.do"]', // 05-authorisations.json
   },
+  calendar: {
+    page: 'calendariEscolar', // 07-calendar.json
+    iframe: 'iframe.calendari-iframe', // 07-calendar.json
+    frameUrlPart: 'calendari/calendariCentre', // 07-calendar.json
+    month: 'div.month-container', // 07-calendar.json
+    monthTitle: 'th.month-title', // 07-calendar.json
+    day: 'td.day', // 07-calendar.json (.old/.new = adjacent months, skip)
+    types: { vacances: 'holiday', festiu: 'public_holiday', festiuLocal: 'local_holiday', noLectiu: 'non_teaching', lliureDisposicio: 'free_choice' }, // 07-calendar.json legend
+  },
 } as const;

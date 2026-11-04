@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import { SelectorNotDiscoveredError, ParserDriftError } from '../adapters/errors.js';
-import type { Credentials, NormalisedItem, PortalAdapter, PortalChild } from '../adapters/types.js';
+import type { Credentials, NormalisedItem, PortalAdapter, PortalChild, SchoolDay } from '../adapters/types.js';
 import { diffItems, shouldNotify, type DiffResult, type KnownItem } from './diff.js';
 import { guardedLogin, type GuardDecision, type LockoutStore } from './lockoutGuard.js';
 import { log } from './logger.js';
@@ -17,6 +17,8 @@ export interface ItemStore {
     results: SyncedDiff[],
     attachments: StoredAttachment[],
   ): Promise<SavedItem[]>;
+  /** Replaces the school-calendar entries (holidays etc.) for this account. */
+  saveSchoolCalendar?(accountId: string, days: SchoolDay[]): Promise<void>;
 }
 
 export type SyncedDiff = DiffResult & { notify: boolean };
@@ -178,6 +180,16 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
         }
       }
       report.saved.push(...(await o.items.save(o.accountId, child, results, attachments)));
+    }
+
+    if (o.adapter.readSchoolCalendar && o.items.saveSchoolCalendar) {
+      try {
+        const days = await o.adapter.readSchoolCalendar(page);
+        if (days.length) await o.items.saveSchoolCalendar(o.accountId, days);
+      } catch (e) {
+        report.errors.push({ section: 'calendariEscolar', error: (e instanceof Error ? e.message : String(e)).slice(0, 200) });
+        log.error({ accountId: o.accountId, section: 'calendariEscolar' }, 'section failed');
+      }
     }
 
     if (report.backfill) report.summary = { openItems: report.counts.new };

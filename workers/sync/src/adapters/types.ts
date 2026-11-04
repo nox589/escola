@@ -12,6 +12,8 @@ export interface PortalAdapter {
   listChildren(page: Page): Promise<PortalChild[]>;
   switchChild(page: Page, child: PortalChild): Promise<void>;
   sections(): SectionReader[];
+  /** Optional: the school's term calendar (holidays, non-teaching days). Read-only. */
+  readSchoolCalendar?(page: Page): Promise<SchoolDay[]>;
   writers(): Partial<Record<SubmissionKind, SectionWriter>>;
 }
 
@@ -85,4 +87,11 @@ export interface NormalisedItem {
   deadlineRaw?: string;
   attachments: { name: string; download: (page: Page) => Promise<Buffer> }[];
   extra?: Record<string, unknown>;
+}
+
+export type SchoolDayType = 'holiday' | 'public_holiday' | 'local_holiday' | 'non_teaching' | 'free_choice';
+export interface SchoolDay {
+  /** YYYY-MM-DD */
+  date: string;
+  type: SchoolDayType;
 }

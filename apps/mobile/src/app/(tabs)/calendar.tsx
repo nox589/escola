@@ -122,7 +122,7 @@ export default function Calendar() {
               </P>
             ) : null}
           </Row>
-          <P>{`${e.kind === 'deadline' ? '⏰ ' : ''}${e.title}`}</P>
+          <P>{`${e.kind === 'deadline' ? '⏰ ' : e.kind === 'school' ? '🏖️ ' : e.kind === 'event' ? '📅 ' : ''}${e.title}`}</P>
         </Card>
       ))}
       <Pressable onPress={() => setCursor(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>

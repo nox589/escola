@@ -1,6 +1,6 @@
 import type { BrowserContext, Page } from 'playwright';
 import { ParserDriftError } from '../errors.js';
-import type { LoginResult, NormalisedItem, PortalAdapter, PortalChild, SectionReader } from '../types.js';
+import type { LoginResult, NormalisedItem, PortalAdapter, PortalChild, SchoolDay, SectionReader } from '../types.js';
 import { gestibLive as G } from './selectors.js';
 
 /**
@@ -240,6 +240,58 @@ export function createGestibLiveAdapter(): PortalAdapter {
     };
   }
 
+  const MONTHS: Record<string, number> = Object.fromEntries(
+    [
+      ['gener', 'enero', 'january'], ['febrer', 'febrero', 'february'], ['marc', 'marzo', 'march'],
+      ['abril', 'abril', 'april'], ['maig', 'mayo', 'may'], ['juny', 'junio', 'june'],
+      ['juliol', 'julio', 'july'], ['agost', 'agosto', 'august'], ['setembre', 'septiembre', 'september'],
+      ['octubre', 'octubre', 'october'], ['novembre', 'noviembre', 'november'], ['desembre', 'diciembre', 'december'],
+    ].flatMap((names, i) => names.map((n) => [n, i + 1])),
+  );
+
+  async function readSchoolCalendar(page: Page): Promise<SchoolDay[]> {
+    const C = G.calendar;
+    await goto(page, C.page);
+    await page.waitForSelector(C.iframe, { timeout: 15_000 });
+    let frame = page.frames().find((f) => f.url().includes(C.frameUrlPart));
+    for (let i = 0; !frame && i < 20; i++) {
+      await page.waitForTimeout(500);
+      frame = page.frames().find((f) => f.url().includes(C.frameUrlPart));
+    }
+    if (!frame) throw new ParserDriftError('school calendar frame not found', C.page);
+    await frame.waitForSelector(C.day, { timeout: 15_000 });
+    const months = await frame.evaluate(
+      ({ month, monthTitle, day, types }) =>
+        Array.from(document.querySelectorAll(month)).map((m) => ({
+          title: (m.querySelector(monthTitle) as HTMLElement | null)?.innerText.trim() ?? '',
+          days: Array.from(m.querySelectorAll(day))
+            .filter((d) => !d.classList.contains('old') && !d.classList.contains('new'))
+            .map((d) => ({
+              n: Number((d as HTMLElement).innerText.trim()),
+              type: Object.keys(types).find((k) => d.classList.contains(k)) ?? null,
+            }))
+            .filter((d) => d.type && d.n > 0),
+        })),
+      { month: C.month, monthTitle: C.monthTitle, day: C.day, types: C.types },
+    );
+    const now = new Date();
+    const startYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1; // school year starts Sep
+    const out: SchoolDay[] = [];
+    for (const m of months) {
+      const norm = m.title.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+      const key = Object.keys(MONTHS).find((k) => norm.includes(k));
+      if (!key) throw new ParserDriftError('unknown month title', C.page);
+      const mon = MONTHS[key]!;
+      const year = Number(/\b(20\d\d)\b/.exec(norm)?.[1] ?? (mon >= 9 ? startYear : startYear + 1));
+      for (const d of m.days)
+        out.push({
+          date: `${year}-${String(mon).padStart(2, '0')}-${String(d.n).padStart(2, '0')}`,
+          type: C.types[d.type as keyof typeof C.types] as SchoolDay['type'],
+        });
+    }
+    return out;
+  }
+
   const readers = [messages, htmlBoxes('circular', G.circulars), htmlBoxes('authorisation', G.authorisations)];
 
   return {
@@ -255,6 +307,7 @@ export function createGestibLiveAdapter(): PortalAdapter {
     listChildren,
     switchChild,
     sections: () => readers,
+    readSchoolCalendar,
     writers: () => ({}), // writes stay off until the forms are captured and the parent confirms each one
   };
 }
