@@ -12,18 +12,6 @@ export default function Welcome() {
   return (
     <Screen>
       <View style={{ flex: 1, justifyContent: 'center', gap: space.xl }}>
-        <View
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            backgroundColor: c.accent,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 34, fontWeight: '800' }}>e</Text>
-        </View>
         <Wordmark height={44} />
         <Text style={{ fontSize: font.h2, color: c.ink, lineHeight: 28 }}>{t('welcome.tagline')}</Text>
         <View style={{ gap: space.s }}>
