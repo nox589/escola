@@ -1,0 +1,14 @@
+{
+  "captured": "2026-11-04, human-run session (Andrew), structure only",
+  "page": "https://www3.caib.es/xestibback/families/circulars",
+  "rendering": "server-rendered HTML inside div[ng-controller='CircularsController as circularsController']; all circulars on one page (no JSON feed)",
+  "item": {
+    "box": "div#circular_<id>.box.box-primary (+ .circularNoVista when unread)",
+    "new_badge": "div#circularNou_<id> > span.label.label-danger",
+    "title": "h4.box-title > a > span.text",
+    "body": "div#collapse_<id>.panel-collapse.collapse > div.text-enriquit (rich HTML)",
+    "attachments": "div.margin-left > ul > li > div; links circulars/veureDocumentAdjunt.do?codiDocument=<id>",
+    "external_links": "plain <a href> inside body (school site, forms, etc.)"
+  },
+  "side_effects_never_call": ["circularsController.marcaCircularLlegida(id) on expand", "POST circulars/marcaCircularVista.do (marks seen)"]
+}
