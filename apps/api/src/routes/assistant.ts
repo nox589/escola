@@ -125,7 +125,11 @@ export async function assistantRoutes(app: FastifyInstance, deps: AppDeps) {
         .orderBy(desc(schema.items.postedAt))
         .limit(16);
       const seenText = new Set(hits.map((h) => h.text));
-      for (const r of recent) if (!seenText.has(r.text)) (seenText.add(r.text), hits.push(r));
+      for (const r of recent) {
+        if (seenText.has(r.text)) continue;
+        seenText.add(r.text);
+        hits.push(r);
+      }
       const itemIds = [...new Set(hits.map((h) => h.itemId))];
       const meta = itemIds.length
         ? await db
