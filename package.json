@@ -1,0 +1,33 @@
+{
+  "name": "escola",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "tsc -p tsconfig.json && turbo run typecheck",
+    "test": "vitest run",
+    "test:worker": "vitest run workers/sync",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "dev": "turbo run dev --parallel",
+    "db:migrate": "pnpm --filter @escola/db migrate",
+    "mock-portal": "pnpm --filter @escola/mock-portal start",
+    "anonymise": "tsx scripts/anonymise.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "playwright": "^1.64.1",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^2.1.8"
+  },
+  "type": "module"
+}

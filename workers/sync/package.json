@@ -1,0 +1,19 @@
+{
+  "name": "@escola/sync-worker",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "canary": "tsx src/canary.ts"
+  },
+  "dependencies": {
+    "@escola/crypto": "workspace:*",
+    "@escola/db": "workspace:*",
+    "@escola/shared": "workspace:*",
+    "playwright": "^1.49.1",
+    "pino": "^9.5.0"
+  }
+}
