@@ -1,7 +1,8 @@
+import { Wordmark } from '@/components/Clases';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
-import { Button, Chip, H1, P, Screen } from '@/components/ui';
+import { Button, Chip, P, Screen } from '@/components/ui';
 import { UI_LANGUAGES } from '@/i18n';
 import { font, space, useTheme } from '@/lib/theme';
 
@@ -23,7 +24,7 @@ export default function Welcome() {
         >
           <Text style={{ color: '#fff', fontSize: 34, fontWeight: '800' }}>e</Text>
         </View>
-        <H1>Escola</H1>
+        <Wordmark height={44} />
         <Text style={{ fontSize: font.h2, color: c.ink, lineHeight: 28 }}>{t('welcome.tagline')}</Text>
         <View style={{ gap: space.s }}>
           <P muted small>

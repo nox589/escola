@@ -1,6 +1,58 @@
 import type { Strings } from './en';
 
 export const de: Strings = {
+  cl: {
+    "ask": "Frag: \"Wann ist der Ausflug?\"",
+    "askWeek": "Frag: \"Was ist diese Woche fällig?\"",
+    "all": "Alle",
+    "openPage": "Seite von {{name}} öffnen",
+    "needsYou": "Braucht dich",
+    "toDo": "{{count}} offen",
+    "updates": "Neuigkeiten",
+    "nothingNeeds": "Gerade ist nichts zu tun.",
+    "family": "Familie",
+    "due": "Fällig {{date}}",
+    "translated": "Übersetzt aus dem {{lang}}",
+    "act": {
+      "consent": "Prüfen und unterschreiben",
+      "justify_absence": "Fehlzeit entschuldigen",
+      "reply": "Antworten",
+      "upload_document": "Dokument senden",
+      "answer_survey": "Umfrage beantworten",
+      "book_meeting": "Termin buchen",
+      "pay": "Zahlung ansehen",
+      "read_only_external": "Link öffnen",
+      "open": "Öffnen"
+    },
+    "thisWeek": "Diese Woche",
+    "today": "Heute",
+    "week": "Woche",
+    "showWeek": "Ganze Woche zeigen",
+    "comingUp": "Demnächst im Schulkalender",
+    "nothingWeek": "Diese Woche steht noch nichts an.",
+    "prevWeek": "Vorige Woche",
+    "nextWeek": "Nächste Woche",
+    "kinds": {
+      "deadline": "Fällig",
+      "event": "Termin",
+      "school": "Schulfrei"
+    },
+    "child": {
+      "updates": "Neuigkeiten",
+      "documents": "Dokumente",
+      "grades": "Noten",
+      "attendance": "Anwesenheit",
+      "gradesEmpty": "Für dieses Trimester gibt es noch keine Noten. Sie erscheinen hier, sobald die Schule sie veröffentlicht.",
+      "attendanceEmpty": "Die Anwesenheit aus GestIB wird als Nächstes angebunden.",
+      "searchDocs": "Dokumente durchsuchen",
+      "noDocs": "Noch keine Dokumente.",
+      "inShort": "Kurz gesagt",
+      "summary": "{{actions}} offen · {{updates}} Neuigkeiten in 30 Tagen",
+      "noUpdates": "Noch keine Neuigkeiten."
+    },
+    "settings": "Einstellungen",
+    "back": "Zurück"
+  },
   common: {
     loading: 'Lädt…',
     error: 'Etwas ist schiefgelaufen.',

@@ -1,6 +1,58 @@
 import type { Strings } from './en';
 
 export const es: Strings = {
+  cl: {
+    "ask": "Pregunta: \"¿Cuándo es la excursión?\"",
+    "askWeek": "Pregunta: \"¿Qué hay pendiente esta semana?\"",
+    "all": "Todos",
+    "openPage": "Abrir la página de {{name}}",
+    "needsYou": "Te necesita",
+    "toDo": "{{count}} pendientes",
+    "updates": "Novedades",
+    "nothingNeeds": "Ahora mismo no hay nada pendiente.",
+    "family": "Familia",
+    "due": "Vence el {{date}}",
+    "translated": "Traducido del {{lang}}",
+    "act": {
+      "consent": "Revisar y firmar",
+      "justify_absence": "Justificar falta",
+      "reply": "Responder",
+      "upload_document": "Enviar documento",
+      "answer_survey": "Responder encuesta",
+      "book_meeting": "Pedir cita",
+      "pay": "Ver pago",
+      "read_only_external": "Abrir enlace",
+      "open": "Abrir"
+    },
+    "thisWeek": "Esta semana",
+    "today": "Hoy",
+    "week": "Semana",
+    "showWeek": "Ver toda la semana",
+    "comingUp": "Próximamente en el calendario escolar",
+    "nothingWeek": "Aún no hay nada esta semana.",
+    "prevWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "kinds": {
+      "deadline": "Vence",
+      "event": "Evento",
+      "school": "Sin clase"
+    },
+    "child": {
+      "updates": "Novedades",
+      "documents": "Documentos",
+      "grades": "Notas",
+      "attendance": "Asistencia",
+      "gradesEmpty": "Aún no hay notas este trimestre. Aparecerán aquí en cuanto el colegio las publique.",
+      "attendanceEmpty": "La asistencia de GestIB se conecta a continuación.",
+      "searchDocs": "Buscar documentos",
+      "noDocs": "Aún no hay documentos.",
+      "inShort": "En resumen",
+      "summary": "{{actions}} pendientes · {{updates}} novedades en 30 días",
+      "noUpdates": "Aún no hay novedades."
+    },
+    "settings": "Ajustes",
+    "back": "Atrás"
+  },
   common: {
     loading: 'Cargando…',
     error: 'Algo ha fallado.',

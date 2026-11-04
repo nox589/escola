@@ -1,6 +1,58 @@
 import type { Strings } from './en';
 
 export const fr: Strings = {
+  cl: {
+    "ask": "Demandez : « Quand a lieu la sortie ? »",
+    "askWeek": "Demandez : « Qu'y a-t-il à faire cette semaine ? »",
+    "all": "Tous",
+    "openPage": "Ouvrir la page de {{name}}",
+    "needsYou": "À faire",
+    "toDo": "{{count}} à faire",
+    "updates": "Nouveautés",
+    "nothingNeeds": "Rien à faire pour le moment.",
+    "family": "Famille",
+    "due": "Avant le {{date}}",
+    "translated": "Traduit du {{lang}}",
+    "act": {
+      "consent": "Lire et signer",
+      "justify_absence": "Justifier l'absence",
+      "reply": "Répondre",
+      "upload_document": "Envoyer un document",
+      "answer_survey": "Répondre au sondage",
+      "book_meeting": "Prendre rendez-vous",
+      "pay": "Voir le paiement",
+      "read_only_external": "Ouvrir le lien",
+      "open": "Ouvrir"
+    },
+    "thisWeek": "Cette semaine",
+    "today": "Aujourd'hui",
+    "week": "Semaine",
+    "showWeek": "Voir toute la semaine",
+    "comingUp": "À venir dans le calendrier scolaire",
+    "nothingWeek": "Rien de prévu cette semaine pour l'instant.",
+    "prevWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "kinds": {
+      "deadline": "Échéance",
+      "event": "Événement",
+      "school": "Pas d'école"
+    },
+    "child": {
+      "updates": "Nouveautés",
+      "documents": "Documents",
+      "grades": "Notes",
+      "attendance": "Présence",
+      "gradesEmpty": "Pas encore de notes ce trimestre. Elles apparaîtront ici dès que l'école les publiera.",
+      "attendanceEmpty": "La présence depuis GestIB sera connectée ensuite.",
+      "searchDocs": "Rechercher des documents",
+      "noDocs": "Pas encore de documents.",
+      "inShort": "En bref",
+      "summary": "{{actions}} à faire · {{updates}} nouveautés en 30 jours",
+      "noUpdates": "Pas encore de nouveautés."
+    },
+    "settings": "Réglages",
+    "back": "Retour"
+  },
   common: {
     loading: 'Chargement…',
     error: 'Un problème est survenu.',

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, View } from 'react-native';
 import { Banner, Button, Card, Field, H1, H2, Loading, P, Screen } from '@/components/ui';
 import { api, ApiError, type ItemDetail, type Submission } from '@/lib/api';
-import { useMe } from '@/lib/hooks';
+import { useChildren, useMe } from '@/lib/hooks';
 import { space, useTheme } from '@/lib/theme';
 
 /**
@@ -28,6 +28,7 @@ export default function Reply() {
   const { t } = useTranslation();
   const c = useTheme();
   const me = useMe();
+  const kids = useChildren();
   const item = useQuery({ queryKey: ['item', itemId], queryFn: () => api<ItemDetail>(`/items/${itemId}`) });
   const [text, setText] = useState('');
   const [sub, setSub] = useState<Submission | null>(null);
@@ -52,7 +53,8 @@ export default function Reply() {
       const s = sub
         ? await api<Submission>(`/submissions/${sub.id}`, { method: 'PATCH', body })
         : await api<Submission>('/submissions', {
-            body: { kind: 'reply_message', child_id: item.data.child!.id, item_id: itemId, ...body },
+            // Family-wide messages have no child; GestIB replies are per message, so any child of the family will do.
+            body: { kind: 'reply_message', child_id: item.data.child?.id ?? kids.data?.[0]?.id, item_id: itemId, ...body },
           });
       setSub(s);
     } catch (e) {

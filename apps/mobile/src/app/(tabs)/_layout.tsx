@@ -1,13 +1,9 @@
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Text, type ColorValue } from 'react-native';
+import { Icon } from '@/components/Icon';
 import { useTheme } from '@/lib/theme';
 
-const icon = (glyph: string) =>
-  function TabIcon({ color }: { color: ColorValue }) {
-    return <Text style={{ color, fontSize: 18 }}>{glyph}</Text>;
-  };
-
+/** Two tabs (Today, Week). Ask, Settings and Documents are full screens pushed on top. */
 export default function TabsLayout() {
   const { t } = useTranslation();
   const c = useTheme();
@@ -17,14 +13,19 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
-        tabBarStyle: { backgroundColor: c.card, borderTopColor: c.line },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarStyle: { backgroundColor: c.card, borderTopColor: c.line, height: 64, paddingTop: 6 },
+        sceneStyle: { backgroundColor: c.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: t('tabs.home'), tabBarIcon: icon('◉') }} />
-      <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), tabBarIcon: icon('▦') }} />
-      <Tabs.Screen name="documents" options={{ title: t('tabs.documents'), tabBarIcon: icon('▤') }} />
-      <Tabs.Screen name="assistant" options={{ title: t('tabs.assistant'), tabBarIcon: icon('✦') }} />
-      <Tabs.Screen name="settings" options={{ title: t('tabs.settings'), tabBarIcon: icon('⚙') }} />
+      <Tabs.Screen
+        name="index"
+        options={{ title: t('cl.today'), tabBarIcon: ({ color }) => <Icon name="home" color={String(color)} /> }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{ title: t('cl.week'), tabBarIcon: ({ color }) => <Icon name="calendar" color={String(color)} /> }}
+      />
     </Tabs>
   );
 }

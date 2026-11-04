@@ -1,4 +1,56 @@
 export const en = {
+  cl: {
+    "ask": "Ask: \"When's the trip?\"",
+    "askWeek": "Ask: \"What's due this week?\"",
+    "all": "All",
+    "openPage": "Open {{name}}'s page",
+    "needsYou": "Needs you",
+    "toDo": "{{count}} to do",
+    "updates": "Updates",
+    "nothingNeeds": "Nothing needs you right now.",
+    "family": "Family",
+    "due": "Due {{date}}",
+    "translated": "Translated from {{lang}}",
+    "act": {
+      "consent": "Review and sign",
+      "justify_absence": "Justify absence",
+      "reply": "Reply",
+      "upload_document": "Send a document",
+      "answer_survey": "Answer survey",
+      "book_meeting": "Book a meeting",
+      "pay": "See payment",
+      "read_only_external": "Open link",
+      "open": "Open"
+    },
+    "thisWeek": "This week",
+    "today": "Today",
+    "week": "Week",
+    "showWeek": "Show whole week",
+    "comingUp": "Coming up from the school calendar",
+    "nothingWeek": "Nothing scheduled this week yet.",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "kinds": {
+      "deadline": "Due",
+      "event": "Event",
+      "school": "No school"
+    },
+    "child": {
+      "updates": "Updates",
+      "documents": "Documents",
+      "grades": "Grades",
+      "attendance": "Attendance",
+      "gradesEmpty": "No grades posted yet this term. They will appear here as soon as the school publishes them.",
+      "attendanceEmpty": "Attendance from GestIB is being connected next.",
+      "searchDocs": "Search documents",
+      "noDocs": "No documents yet.",
+      "inShort": "In short",
+      "summary": "{{actions}} to do · {{updates}} updates in the last 30 days",
+      "noUpdates": "No updates yet."
+    },
+    "settings": "Settings",
+    "back": "Back"
+  },
   common: {
     loading: 'Loading…',
     error: 'Something went wrong.',

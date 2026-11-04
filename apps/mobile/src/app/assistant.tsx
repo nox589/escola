@@ -1,3 +1,4 @@
+import { BackLink } from '@/components/Clases';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -72,6 +73,7 @@ export default function Assistant() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} contentContainerStyle={{ padding: space.l, gap: space.m, flexGrow: 1 }}>
+          <BackLink label={t('cl.back')} />
           <H1>{t('assistant.title')}</H1>
           <P muted small>
             {t('assistant.note')}

@@ -180,7 +180,7 @@ export class PgItemStore implements ItemStore {
         .where(
           and(eq(schema.children.portalAccountId, accountId), eq(schema.children.portalChildRef, child.ref)),
         );
-      const DEFAULT_COLOURS = ['#1F6B52', '#3D5BA9', '#B4561E', '#8A3D8F', '#2E7F94', '#9A7B12'];
+      const DEFAULT_COLOURS = ['#005451', '#C0CF58', '#946000', '#3D5BA9', '#8A3D8F', '#2E7F94'];
       const siblings = existingChild
         ? 0
         : (await db.select({ id: schema.children.id }).from(schema.children)).length;

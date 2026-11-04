@@ -1,3 +1,4 @@
+import { Wordmark } from '@/components/Clases';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,7 @@ export default function SignIn() {
 
   return (
     <Screen>
+      <Wordmark height={30} />
       <H1>{t('signin.title')}</H1>
       {error ? <Banner text={error} tone="danger" /> : null}
       <Field

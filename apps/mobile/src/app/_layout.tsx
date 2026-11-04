@@ -15,6 +15,19 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
+/** Web: load Figtree (clases typeface) once and apply it everywhere. */
+if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('clases-font')) {
+  const link = document.createElement('link');
+  link.id = 'clases-font';
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap';
+  document.head.appendChild(link);
+  const style = document.createElement('style');
+  style.textContent = "body, div, span, input, textarea, button { font-family: 'Figtree', system-ui, -apple-system, sans-serif !important; } body { background: #FAF7F0; }";
+  document.head.appendChild(style);
+  document.title = 'clases';
+}
+
 function useNotificationTaps() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -61,6 +74,10 @@ export default function RootLayout() {
           <Stack.Screen name="account-problem/[id]" options={{ title: '' }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="item/[id]" options={{ title: '' }} />
+          <Stack.Screen name="child/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="assistant" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="documents" options={{ headerShown: false }} />
           <Stack.Screen name="reply/[itemId]" options={{ title: '', presentation: 'modal' }} />
         </Stack>
       </QueryClientProvider>

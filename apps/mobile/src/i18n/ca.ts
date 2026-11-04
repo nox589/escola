@@ -1,6 +1,58 @@
 import type { Strings } from './en';
 
 export const ca: Strings = {
+  cl: {
+    "ask": "Pregunta: \"Quan és la sortida?\"",
+    "askWeek": "Pregunta: \"Què hi ha pendent aquesta setmana?\"",
+    "all": "Tots",
+    "openPage": "Obre la pàgina de {{name}}",
+    "needsYou": "Et necessita",
+    "toDo": "{{count}} pendents",
+    "updates": "Novetats",
+    "nothingNeeds": "Ara mateix no hi ha res pendent.",
+    "family": "Família",
+    "due": "Venç el {{date}}",
+    "translated": "Traduït del {{lang}}",
+    "act": {
+      "consent": "Revisa i signa",
+      "justify_absence": "Justifica la falta",
+      "reply": "Respon",
+      "upload_document": "Envia un document",
+      "answer_survey": "Respon l'enquesta",
+      "book_meeting": "Demana cita",
+      "pay": "Veure pagament",
+      "read_only_external": "Obre l'enllaç",
+      "open": "Obre"
+    },
+    "thisWeek": "Aquesta setmana",
+    "today": "Avui",
+    "week": "Setmana",
+    "showWeek": "Mostra tota la setmana",
+    "comingUp": "Properament al calendari escolar",
+    "nothingWeek": "Encara no hi ha res aquesta setmana.",
+    "prevWeek": "Setmana anterior",
+    "nextWeek": "Setmana següent",
+    "kinds": {
+      "deadline": "Venç",
+      "event": "Esdeveniment",
+      "school": "Sense classe"
+    },
+    "child": {
+      "updates": "Novetats",
+      "documents": "Documents",
+      "grades": "Notes",
+      "attendance": "Assistència",
+      "gradesEmpty": "Encara no hi ha notes aquest trimestre. Apareixeran aquí tan bon punt l'escola les publiqui.",
+      "attendanceEmpty": "L'assistència de GestIB es connecta tot seguit.",
+      "searchDocs": "Cerca documents",
+      "noDocs": "Encara no hi ha documents.",
+      "inShort": "En resum",
+      "summary": "{{actions}} pendents · {{updates}} novetats en 30 dies",
+      "noUpdates": "Encara no hi ha novetats."
+    },
+    "settings": "Configuració",
+    "back": "Enrere"
+  },
   common: {
     loading: 'Carregant…',
     error: 'Alguna cosa ha fallat.',

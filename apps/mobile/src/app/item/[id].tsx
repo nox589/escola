@@ -142,7 +142,7 @@ export default function Item() {
           kind="secondary"
           onPress={() =>
             router.push({
-              pathname: '/(tabs)/assistant',
+              pathname: '/assistant',
               params: { about: it.id, title: tr?.title ?? it.original.title },
             })
           }

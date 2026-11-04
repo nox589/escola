@@ -1,3 +1,4 @@
+import { BackLink } from '@/components/Clases';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -71,6 +72,7 @@ export default function Settings() {
 
   return (
     <Screen>
+      <BackLink label={t('cl.today')} />
       <H1>{t('settings.title')}</H1>
       {notice ? <Banner text={notice} tone="ok" /> : null}
 

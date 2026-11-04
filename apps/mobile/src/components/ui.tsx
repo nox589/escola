@@ -103,12 +103,11 @@ export function Card({
   const c = useTheme();
   const base: ViewStyle = {
     backgroundColor: c.card,
-    borderRadius: radius.m,
+    borderRadius: radius.l,
     padding: space.l,
     gap: space.s,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: c.line,
-    ...(accent ? { borderLeftWidth: 4, borderLeftColor: accent } : {}),
     ...style,
   };
   if (!onPress) return <View style={base}>{children}</View>;
@@ -137,8 +136,8 @@ export function Button({
   disabled?: boolean;
 }) {
   const c = useTheme();
-  const bg = { primary: c.accent, secondary: c.accentSoft, danger: c.dangerSoft, ghost: 'transparent' }[kind];
-  const fg = { primary: '#fff', secondary: c.accent, danger: c.danger, ghost: c.accent }[kind];
+  const bg = { primary: c.accent, secondary: c.card, danger: c.dangerSoft, ghost: 'transparent' }[kind];
+  const fg = { primary: '#fff', secondary: c.ink, danger: c.danger, ghost: c.accent }[kind];
   return (
     <Pressable
       accessibilityRole="button"
@@ -146,12 +145,16 @@ export function Button({
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => ({
-        backgroundColor: bg,
+        backgroundColor: pressed && kind === 'primary' ? c.accentPressed : bg,
         borderRadius: radius.m,
-        paddingVertical: 14,
+        borderWidth: kind === 'secondary' ? 1 : 0,
+        borderColor: c.line,
+        minHeight: 48,
+        justifyContent: 'center',
+        paddingVertical: 12,
         paddingHorizontal: space.l,
         alignItems: 'center',
-        opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
+        opacity: disabled ? 0.45 : 1,
       })}
     >
       {loading ? (
@@ -176,9 +179,10 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
           {
             borderWidth: 1,
             borderColor: c.line,
-            borderRadius: radius.s,
+            borderRadius: radius.m,
             paddingHorizontal: space.m,
             paddingVertical: 12,
+            minHeight: 48,
             fontSize: font.body,
             color: c.ink,
             backgroundColor: c.card,
@@ -211,16 +215,16 @@ export function Chip({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        paddingHorizontal: space.m,
-        paddingVertical: 7,
+        paddingHorizontal: space.l,
+        minHeight: 40,
         borderRadius: 999,
-        backgroundColor: active ? c.ink : c.card,
+        backgroundColor: active ? c.accentSoft : c.card,
         borderWidth: 1,
-        borderColor: active ? c.ink : c.line,
+        borderColor: active ? c.accent : c.line,
       }}
     >
-      {colour ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colour }} /> : null}
-      <Text style={{ color: active ? c.bg : c.ink, fontSize: font.small, fontWeight: '500' }}>{label}</Text>
+      {colour ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colour }} /> : null}
+      <Text style={{ color: c.ink, fontSize: font.small, fontWeight: '600' }}>{label}</Text>
     </Pressable>
   );
 }

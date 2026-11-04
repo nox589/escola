@@ -38,6 +38,18 @@ async function main() {
     locale: 'en-GB',
   });
   page.on('pageerror', (e) => process.stdout.write(`  page error: ${e.message}\n`));
+  try {
+    await run(page);
+  } catch (e) {
+    await page.screenshot({ path: `${out}/FAILED.png` });
+    throw e;
+  } finally {
+    await browser.close();
+  }
+  process.stdout.write(`screenshots in ${out}/\n`);
+}
+
+async function run(page: Page) {
 
   step('welcome');
   await page.goto(APP);
@@ -73,9 +85,24 @@ async function main() {
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Not now' }).click();
 
-  step('home feed');
-  await page.getByText('Needs action').first().waitFor({ timeout: 30_000 });
-  await shot(page, '06-home');
+  step('Today');
+  await page.getByText('Needs you').first().waitFor({ timeout: 30_000 });
+  await shot(page, '06-today');
+
+  step('Today filtered by child, then the child page');
+  await page.getByRole('button', { name: 'Alumne A' }).first().click();
+  await page.getByText("Open Alumne A's page").waitFor();
+  await shot(page, '06b-today-child');
+  await page.getByText("Open Alumne A's page").click();
+  await page.getByText('In short').waitFor();
+  await shot(page, '06c-child-page');
+  await page.getByRole('tab', { name: 'Documents' }).click();
+  await page.waitForTimeout(800);
+  await shot(page, '06d-child-documents');
+  await page.getByRole('tab', { name: 'Grades' }).click();
+  await page.getByText('No grades posted yet').waitFor();
+  await page.goto(APP);
+  await page.getByText('Needs you').first().waitFor({ timeout: 30_000 });
 
   step('item detail + original toggle');
   await page.getByText('[en] Sortida al Parc Natural').first().click();
@@ -96,24 +123,27 @@ async function main() {
   await page.getByRole('heading', { name: 'Sent ✓' }).waitFor({ timeout: 60_000 });
   await shot(page, '10-submission-sent');
 
-  for (const [tab, file] of [
-    ['Calendar', '11-calendar'],
-    ['Documents', '12-documents'],
-    ['Ask', '13-assistant'],
-    ['Settings', '14-settings'],
-  ] as const) {
-    step(tab);
-    await page.goto(`${APP}/${tab === 'Ask' ? 'assistant' : tab.toLowerCase()}`);
-    await page.waitForLoadState('networkidle');
-    if (tab === 'Ask') {
-      await page.getByText('What is due this week?').click();
-      await page.getByText('Sources').first().waitFor({ timeout: 15_000 });
-    }
-    await shot(page, file);
-  }
+  step('Week tab');
+  await page.goto(APP);
+  await page.getByRole('tab', { name: 'Week' }).click();
+  await page.getByText('This week').first().waitFor();
+  await shot(page, '11-week');
+  await page.getByLabel('Next week').click();
+  await page.waitForTimeout(600);
+  await shot(page, '11b-week-next');
 
-  await browser.close();
-  process.stdout.write(`screenshots in ${out}/\n`);
+  step('Ask bar opens Ask');
+  await page.goto(APP);
+  await page.getByText('Ask: "When\'s the trip?"').click();
+  await page.getByText('What is due this week?').click();
+  await page.getByText('Sources').first().waitFor({ timeout: 15_000 });
+  await shot(page, '13-ask');
+
+  step('Settings from the header');
+  await page.goto(APP);
+  await page.getByLabel('Settings').filter({ visible: true }).first().click();
+  await page.getByRole('heading', { name: 'Settings' }).waitFor();
+  await shot(page, '14-settings');
 }
 
 main().catch((e) => {

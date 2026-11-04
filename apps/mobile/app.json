@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Escola",
+    "name": "clases",
     "slug": "escola",
     "version": "0.1.0",
     "scheme": "escola",
@@ -17,7 +17,7 @@
     "android": {
       "package": "app.escola.parents",
       "adaptiveIcon": {
-        "backgroundColor": "#E8F1EC",
+        "backgroundColor": "#005451",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
