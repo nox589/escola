@@ -132,7 +132,11 @@ async function reprocessStaleEnrichment() {
   }
   if (total) log.info({ items: total, model: providers.translate.model }, 'queued re-processing with current AI model');
 }
-reprocessStaleEnrichment().catch((e) => log.error({ err: e instanceof Error ? e.name : 'unknown' }, 'reprocess failed'));
+// Wait until the previous deploy's worker has stopped, so it cannot pick these jobs up with old code.
+setTimeout(
+  () => void reprocessStaleEnrichment().catch((e) => log.error({ err: e instanceof Error ? e.name : 'unknown' }, 'reprocess failed')),
+  Number(env.REPROCESS_DELAY_MS ?? 90_000),
+);
 log.info({ mock: useMock, llm: providers.translate.name }, 'worker started');
 
 // Hosts that only run "web services" (e.g. Render via its API) need an open port and a health check.
