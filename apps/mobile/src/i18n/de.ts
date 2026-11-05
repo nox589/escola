@@ -144,6 +144,7 @@ export const de: Strings = {
     "needPassword": "Brauchst du dein GestIB-Passwort?",
     "private": "Privat by Design. Keine Verbindung zur CAIB.",
     tagline: 'Nachrichten der Schule, in deiner Sprache',
+    subtitle: 'Alles von der Schule, sortiert und übersetzt.',
     language: 'Sprache',
     continue: 'Weiter',
     disclaimer: 'Keine Verbindung zum Govern de les Illes Balears.',

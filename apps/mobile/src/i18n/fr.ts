@@ -144,6 +144,7 @@ export const fr: Strings = {
     "needPassword": "Besoin de votre mot de passe GestIB ?",
     "private": "Confidentiel par conception. Sans lien avec la CAIB.",
     tagline: "Les messages de l'école, dans votre langue",
+    subtitle: 'Tout ce qui vient de l\'école, trié et traduit.',
     language: 'Langue',
     continue: 'Continuer',
     disclaimer: 'Sans lien avec le Govern de les Illes Balears.',

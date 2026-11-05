@@ -142,6 +142,7 @@ export const en = {
     "needPassword": "Need your GestIB password?",
     "private": "Private by design. Not affiliated with CAIB.",
     tagline: 'School messages, in your language',
+    subtitle: 'Everything from school, sorted and translated.',
     language: 'Language',
     continue: 'Continue',
     disclaimer: 'Not affiliated with the Govern de les Illes Balears.',

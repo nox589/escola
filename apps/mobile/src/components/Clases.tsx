@@ -6,11 +6,12 @@ import { Icon } from './Icon';
 const wordmark = require('../../assets/wordmark.png');
 
 /** The clases wordmark (aspect 1442 x 381). */
-export function Wordmark({ height = 28 }: { height?: number }) {
+export function Wordmark({ height = 28, tint }: { height?: number; tint?: string }) {
   return (
     <Image
       source={wordmark}
       accessibilityLabel="clases"
+      tintColor={tint}
       style={{ height, width: (height * 1442) / 381 }}
       resizeMode="contain"
     />

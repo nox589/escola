@@ -144,6 +144,7 @@ export const ca: Strings = {
     "needPassword": "Necessites la contrasenya de GestIB?",
     "private": "Privat per disseny. Sense relació amb la CAIB.",
     tagline: "Els missatges de l'escola, en el teu idioma",
+    subtitle: 'Tot el de l\'escola, ordenat i traduït.',
     language: 'Idioma',
     continue: 'Continua',
     disclaimer: 'Sense relació amb el Govern de les Illes Balears.',
