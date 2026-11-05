@@ -7,7 +7,7 @@ import glossary from './glossary.json' with { type: 'json' };
  * SPEC §8.5 enrichment: detect language, translate title/body into a guardian's locale, summary
  * (<=140 chars), classify needs_action + action kind + deadline + confidence. One call per locale.
  */
-export const ENRICH_PROMPT_VERSION = 'enrich-v3';
+export const ENRICH_PROMPT_VERSION = 'enrich-v4';
 
 const LANG_NAMES: Record<string, string> = {
   en: 'English',

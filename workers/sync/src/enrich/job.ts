@@ -211,7 +211,7 @@ export async function enrichItems(o: {
 
       results.push({ itemId: item.id, needsAction, deadline, checkOriginal });
       log.info(
-        { itemId: item.id, needsAction, checkOriginal, child: childName ? 'set' : 'none' },
+        { itemId: item.id, needsAction, checkOriginal, child: childName ? 'set' : 'none', classes: audience?.filter((a) => a.classLabel).length ?? 0 },
         'enriched',
       );
     } catch (e) {

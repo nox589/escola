@@ -114,6 +114,13 @@ export class PgItemStore implements ItemStore {
     });
   }
 
+  private async resetSharedEnrichment(db: Parameters<Parameters<typeof withFamily>[2]>[0], accountId: string) {
+    await db
+      .update(schema.items)
+      .set({ enrichedHash: null })
+      .where(and(eq(schema.items.portalAccountId, accountId), or(eq(schema.items.shared, true), isNull(schema.items.childId))));
+  }
+
   async pruneChildren(accountId: string, keepRefs: string[]): Promise<number> {
     return withFamily(this.pool, this.familyId, async (db) => {
       const stale = (
@@ -128,6 +135,7 @@ export class PgItemStore implements ItemStore {
         await db.update(schema.calendarEntries).set({ childId: null }).where(eq(schema.calendarEntries.childId, c.id));
         await db.delete(schema.children).where(eq(schema.children.id, c.id));
       }
+      if (stale.length) await this.resetSharedEnrichment(db, accountId);
       return stale.length;
     });
   }
@@ -342,6 +350,8 @@ export class PgItemStore implements ItemStore {
             })
             .returning()
         )[0]!;
+      // A new child changes who family-wide items could be for: re-run attribution on them.
+      if (!existingChild) await this.resetSharedEnrichment(db, accountId);
 
       const saved: SavedItem[] = [];
       for (const r of results) {
