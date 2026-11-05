@@ -13,14 +13,16 @@ const W = 'https://www3.caib.es/xestibback/families/';
 function fakePortal(opts: { password: string; captcha?: boolean }) {
   let loggedIn = false;
   // Like the real portal: the selected child has no switcher button, and Ana also has an old
-  // enrolment record (shorter name, no timetable this year). Biel starts selected, which is the
+  // enrolment record (name written differently, same birthdate, no timetable this year). Biel starts selected, which is the
   // case that once listed Ana twice and dropped Biel.
   let selected = 'B';
   const calls: string[] = [];
-  const kids = { A: 'Ana Maria Test', B: 'Biel Test', P: 'Ana Test' } as Record<string, string>;
+  const kids = { A: 'Ana Maria Test', B: 'Biel Test', P: 'TEST, ANA' } as Record<string, string>;
+  const born = { A: '01/02/2019', B: '03/04/2021', P: '01/02/2019' } as Record<string, string>;
   const shell = (body: string) =>
     `<html><body><nav class="navbar"><span id="numMissatgeMenu">1</span></nav>
      <input type="hidden" id="codiFillSeleccionat" value="SEL${selected}">
+     <input type="hidden" id="dataNaixFillSeleccionat" value="${born[selected]}">
      <dd><div class="alumno-seleccionado-card"><img class="img-circle"><span>${kids[selected]}</span><small>CEIP Fake</small></div></dd>
      ${Object.entries(kids)
        .filter(([k]) => k !== selected)

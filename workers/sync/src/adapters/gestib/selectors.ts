@@ -131,6 +131,7 @@ export const gestibLive = {
   children: {
     selectedCard: 'div.alumno-seleccionado-card', // 03-home.json
     selectedRef: 'input#codiFillSeleccionat', // 03-home.json
+    selectedBirthdate: 'input#dataNaixFillSeleccionat', // 03-home.json (dd/mm/yyyy)
     chip: 'button.alumno-chip', // 03-home.json
     chipRefInput: 'input[name="idFill"]', // 03-home.json (in the chip's form)
   },

@@ -158,30 +158,32 @@ export function createGestibLiveAdapter(): PortalAdapter {
     for (const c of await readChips(page)) if (!all.some((x) => x.ref === c.ref)) all.push(c);
 
     // GestIB can keep an old enrolment of the same child as a separate record (e.g. an infant
-    // school entry with a shorter name). Same first name and one name contained in the other:
-    // keep the record with a timetable this year; if that doesn't decide, the fuller name.
-    const words = (n: string) => n.toLocaleLowerCase('ca').split(/\s+/).filter(Boolean);
-    const sameChild = (a: string, b: string) => {
-      const [wa, wb] = [words(a), words(b)];
-      if (wa[0] !== wb[0]) return false;
-      const [small, big] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
-      return small.every((w) => big.includes(w));
-    };
-    const keep: PortalChild[] = [];
-    const done = new Set<string>();
+    // school entry, with the name written differently). Same birthdate and a shared name word =
+    // same child: drop the records with no timetable group this year, if another one has it.
+    // (Twins share both, but both have a current group, so both are kept.)
+    const norm = (n: string) =>
+      new Set(n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2));
+    const facts = new Map<string, { born: string; current: boolean }>();
     for (const c of all) {
-      if (done.has(c.ref)) continue;
-      const group = all.filter((x) => !done.has(x.ref) && sameChild(x.displayName, c.displayName));
-      group.forEach((x) => done.add(x.ref));
-      if (group.length === 1) {
-        keep.push(c);
-        continue;
+      try {
+        const current = await hasCurrentGroup(page, c);
+        await goto(page, 'home');
+        const born = await page.locator(G.children.selectedBirthdate).first().inputValue().catch(() => '');
+        facts.set(c.ref, { born, current });
+      } catch {
+        facts.set(c.ref, { born: '', current: true }); // unknown: never drop it
       }
-      const current: PortalChild[] = [];
-      for (const x of group) if (await hasCurrentGroup(page, x).catch(() => false)) current.push(x);
-      const pool = current.length ? current : group;
-      keep.push(pool.sort((x, y) => words(y.displayName).length - words(x.displayName).length)[0]!);
     }
+    const keep = all.filter((c) => {
+      const f = facts.get(c.ref)!;
+      if (f.current || !f.born) return true;
+      const words = norm(c.displayName);
+      const twin = all.some((o) => {
+        const g = facts.get(o.ref)!;
+        return o.ref !== c.ref && g.current && g.born === f.born && [...norm(o.displayName)].some((w) => words.has(w));
+      });
+      return !twin;
+    });
     return keep;
   }
 
