@@ -80,7 +80,7 @@ export default function Welcome() {
             {t('welcome.headline')}
           </Text>
 
-          <View style={{ marginTop: 36, width: '100%', zIndex: 5 }}>
+          <View style={{ marginTop: 36, width: '100%' }}>
             <Text style={{ color: SOFT, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginLeft: 4, marginBottom: 8 }}>
               {t('welcome.language')}
             </Text>
@@ -97,9 +97,8 @@ export default function Welcome() {
                 <Glyph name="chevron" />
               </View>
             </Pressable>
-            <Text style={{ color: SOFT, fontSize: 15, lineHeight: 20, marginTop: 10, marginLeft: 4 }}>{t('welcome.languageCaption')}</Text>
             {open ? (
-              <View accessibilityRole="list" style={{ position: 'absolute', left: 0, right: 0, top: 94, padding: 6, borderRadius: 18, backgroundColor: CREAM, shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 18 }, elevation: 8 }}>
+              <View accessibilityRole="list" style={{ marginTop: 8, padding: 6, borderRadius: 18, backgroundColor: CREAM }}>
                 {UI_LANGUAGES.map((l) => {
                   const on = l.code === current.code;
                   return (
@@ -120,6 +119,7 @@ export default function Welcome() {
                 })}
               </View>
             ) : null}
+            <Text style={{ color: SOFT, fontSize: 15, lineHeight: 20, marginTop: 10, marginLeft: 4 }}>{t('welcome.languageCaption')}</Text>
           </View>
         </View>
 

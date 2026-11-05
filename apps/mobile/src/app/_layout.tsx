@@ -65,7 +65,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="guide" options={{ headerShown: false }} />
-          <Stack.Screen name="sign-in" options={{ title: '' }} />
+          <Stack.Screen name="sign-in" options={{ headerShown: false }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen name="consent" options={{ headerShown: false }} />
           <Stack.Screen name="link-gestib" options={{ title: '' }} />

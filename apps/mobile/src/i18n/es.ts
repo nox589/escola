@@ -150,6 +150,7 @@ export const es: Strings = {
     disclaimer: 'Sin relación con el Govern de les Illes Balears.',
   },
   signin: {
+    lead: "Te enviamos un enlace por correo. Sin contraseñas nuevas.",
     title: 'Entrar',
     email: 'Correo electrónico',
     send: 'Envíame un enlace de acceso',

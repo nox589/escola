@@ -150,6 +150,7 @@ export const de: Strings = {
     disclaimer: 'Keine Verbindung zum Govern de les Illes Balears.',
   },
   signin: {
+    lead: "Wir schicken dir einen Link per E-Mail. Kein neues Passwort nötig.",
     title: 'Anmelden',
     email: 'E-Mail',
     send: 'Anmeldelink per E-Mail senden',

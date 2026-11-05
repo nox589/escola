@@ -84,6 +84,12 @@ async function run(page: Page) {
   step('welcome');
   await page.goto(APP);
   await page.getByText(/All of GestIB/).waitFor();
+  await page.getByRole('button', { name: /Language: English/ }).click();
+  await page.getByRole('button', { name: 'Español' }).click();
+  await page.getByText('Todos los mensajes del cole, en español').waitFor();
+  await page.getByRole('button', { name: /Español/ }).first().click();
+  await page.getByRole('button', { name: 'English' }).click();
+  await page.getByText('Every school message, in English').waitFor();
   await shot(page, '01-welcome');
 
   step('password guide before signing in');

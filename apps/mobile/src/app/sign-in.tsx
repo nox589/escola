@@ -1,11 +1,12 @@
-import { Wordmark } from '@/components/Clases';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Banner, Button, Field, H1, P, Screen } from '@/components/ui';
+import { Pressable, Text, View } from 'react-native';
+import { CREAM, TealButton, TealField, TealFooter, TealNote, TealScreen, TealTitle, TealWordmark } from '@/components/Teal';
 import { api } from '@/lib/api';
 import { signInWithToken } from '@/lib/session';
 
+/** Sign in with an emailed link (no clases password). Same teal look as Welcome. */
 export default function SignIn() {
   const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
@@ -42,47 +43,34 @@ export default function SignIn() {
   };
 
   return (
-    <Screen>
-      <Wordmark height={30} />
-      <H1>{t('signin.title')}</H1>
-      {error ? <Banner text={error} tone="danger" /> : null}
-      <Field
+    <TealScreen back={t('common.back')}>
+      <TealWordmark height={36} />
+      <TealTitle lead={t('signin.lead')}>{t('signin.title')}</TealTitle>
+      {error ? <TealNote text={error} tone="danger" /> : null}
+      <TealField
         label={t('signin.email')}
         value={email}
         onChangeText={setEmail}
+        placeholder="you@example.com"
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
         inputMode="email"
+        onSubmitEditing={() => /.+@.+\..+/.test(email) && void send()}
       />
-      <Button
-        title={t('signin.send')}
-        onPress={send}
-        loading={busy && !sent}
-        disabled={!/.+@.+\..+/.test(email)}
-      />
+      <TealButton title={t('signin.send')} onPress={() => void send()} loading={busy && !sent} disabled={!/.+@.+\..+/.test(email)} />
       {sent ? (
-        <>
-          <Banner text={t('signin.sent')} tone="ok" />
-          <Field
-            label={t('signin.paste')}
-            value={link}
-            onChangeText={setLink}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Button
-            title={t('signin.verify')}
-            onPress={verify}
-            loading={busy}
-            disabled={link.length < 20}
-            kind="secondary"
-          />
-        </>
+        <View style={{ gap: 18 }}>
+          <TealNote text={t('signin.sent')} tone="ok" />
+          <TealField label={t('signin.paste')} value={link} onChangeText={setLink} autoCapitalize="none" autoCorrect={false} />
+          <TealButton title={t('signin.verify')} onPress={() => void verify()} loading={busy} disabled={link.length < 20} kind="outline" />
+        </View>
       ) : null}
-      <P muted small>
-        {t('welcome.disclaimer')}
-      </P>
-    </Screen>
+      <View style={{ flex: 1 }} />
+      <Pressable onPress={() => router.push('/guide')} accessibilityRole="link" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: CREAM, fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' }}>{t('welcome.needPassword')}</Text>
+      </Pressable>
+      <TealFooter text={t('welcome.private')} />
+    </TealScreen>
   );
 }

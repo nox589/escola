@@ -148,6 +148,7 @@ export const en = {
     disclaimer: 'Not affiliated with the Govern de les Illes Balears.',
   },
   signin: {
+    lead: "We'll email you a link. No new password to remember.",
     title: 'Sign in',
     email: 'Email',
     send: 'Email me a sign-in link',

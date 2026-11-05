@@ -150,6 +150,7 @@ export const ca: Strings = {
     disclaimer: 'Sense relació amb el Govern de les Illes Balears.',
   },
   signin: {
+    lead: "T’enviem un enllaç per correu. Sense contrasenyes noves.",
     title: 'Entra',
     email: 'Correu electrònic',
     send: "Envia'm un enllaç d'accés",
