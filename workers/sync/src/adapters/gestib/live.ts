@@ -1,3 +1,4 @@
+import { log } from '../../core/logger.js';
 import type { BrowserContext, Page } from 'playwright';
 import { ParserDriftError } from '../errors.js';
 import type {
@@ -538,7 +539,14 @@ export function createGestibLiveAdapter(): PortalAdapter {
         .map((e) => ((e as HTMLElement).innerText ?? '').trim())
         .filter(Boolean),
     );
-    return parseCardLines(leaves.slice(1));
+    const parsed = parseCardLines(leaves.slice(1));
+    // Shape only (no text): which card lines exist and which patterns matched.
+    if (!parsed.classLabel)
+      log.info(
+        { lines: leaves.slice(1).map((l) => ({ len: l.length, digits: /\d/.test(l), school: SCHOOL_RE.test(l), cls: CLASS_RE.test(l) })) },
+        'child card: no class found',
+      );
+    return parsed;
   }
 
   /** Reads each part independently so one failing page never wipes the others. */
