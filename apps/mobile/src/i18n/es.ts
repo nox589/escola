@@ -37,6 +37,8 @@ export const es: Strings = {
     },
     "nothingPast": "Nada anterior aquí.",
     "seeAll": "Ver todo",
+    "syncNow": "Actualizar",
+    "syncing": "Consultando GestIB… (uno o dos minutos)",
     "seeAllUpdates": "Ver las {{count}} novedades",
     "inbox": {
       "unread": "No leídos",

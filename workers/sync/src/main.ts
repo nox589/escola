@@ -126,7 +126,11 @@ async function reprocessStaleEnrichment() {
   let families: string[];
   try {
     await client.query('SET ROLE escola_app');
-    families = [...new Set((await client.query('SELECT family_id FROM accounts_due_for_sync()')).rows.map((r) => r.family_id as string))];
+    const due = (await client.query('SELECT portal_account_id, family_id FROM accounts_due_for_sync()')).rows;
+    families = [...new Set(due.map((r) => r.family_id as string))];
+    // A deploy may change how GestIB is read (e.g. the children listing): refresh every account once.
+    for (const r of due) await deps.enqueue.sync({ familyId: r.family_id as string, portalAccountId: r.portal_account_id as string }, 0);
+    if (due.length) log.info({ accounts: due.length }, 'queued a sync after deploy');
     await client.query('RESET ROLE');
   } finally {
     client.release();

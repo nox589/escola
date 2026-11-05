@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CallSchoolButton } from '@/components/CallSchool';
 import { AppHeader, AskBar } from '@/components/Clases';
@@ -55,10 +55,18 @@ export default function Today() {
 
   const account = summary.data?.accounts[0];
   const problem = summary.data?.accounts.find((a) => !['active', 'paused'].includes(a.status));
+  const [syncing, setSyncing] = useState(false);
   const refresh = async () => {
     if (account?.status === 'active')
       await api(`/portal-accounts/${account.id}/sync`, { method: 'POST' }).catch(() => undefined);
     await qc.invalidateQueries();
+  };
+  // Web has no pull-to-refresh: a tap asks GestIB again; a sync takes a minute or two.
+  const syncNow = async () => {
+    setSyncing(true);
+    await refresh();
+    for (const ms of [45_000, 90_000, 150_000]) setTimeout(() => void qc.invalidateQueries(), ms);
+    setTimeout(() => setSyncing(false), 150_000);
   };
 
   const H = ({ children }: { children: string }) => (
@@ -153,6 +161,26 @@ export default function Today() {
                 </P>
               ) : null}
             </View>
+
+            {account ? (
+              <Pressable
+                onPress={() => void syncNow()}
+                disabled={syncing}
+                accessibilityRole="button"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -6 }}
+              >
+                <Text style={{ color: c.muted, fontSize: 13 }}>
+                  {syncing
+                    ? t('cl.syncing')
+                    : t('cl.child.synced', { when: relative(account.lastSyncAt, i18n.language) })}
+                </Text>
+                {!syncing ? (
+                  <Text style={{ color: c.accent, fontSize: 13, fontWeight: '700' }}>
+                    · {t('cl.syncNow')}
+                  </Text>
+                ) : null}
+              </Pressable>
+            ) : null}
 
             <ComingUp limit={3} onSeeAll={() => router.navigate('/calendar')} />
 

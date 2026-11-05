@@ -37,6 +37,8 @@ export const ca: Strings = {
     },
     "nothingPast": "No hi ha res anterior.",
     "seeAll": "Veure-ho tot",
+    "syncNow": "Actualitza",
+    "syncing": "Consultant GestIB… (un o dos minuts)",
     "seeAllUpdates": "Veure les {{count}} novetats",
     "inbox": {
       "unread": "No llegits",

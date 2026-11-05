@@ -35,6 +35,8 @@ export const en = {
     },
     "nothingPast": "Nothing older here.",
     "seeAll": "See all",
+    "syncNow": "Sync now",
+    "syncing": "Checking GestIB… (a minute or two)",
     "seeAllUpdates": "See all {{count}} updates",
     "inbox": {
       "unread": "Unread",
