@@ -1,4 +1,4 @@
-/* clases service worker: shows push notifications and opens the right screen when tapped.
+/* MiCole service worker: shows push notifications and opens the right screen when tapped.
  * No offline caching on purpose: the app always loads fresh from the server. */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
@@ -8,11 +8,11 @@ self.addEventListener('push', (event) => {
   try {
     msg = event.data ? event.data.json() : {};
   } catch (_) {
-    msg = { title: 'clases', body: event.data ? event.data.text() : '' };
+    msg = { title: 'MiCole', body: event.data ? event.data.text() : '' };
   }
   const data = msg.data || {};
   event.waitUntil(
-    self.registration.showNotification(msg.title || 'clases', {
+    self.registration.showNotification(msg.title || 'MiCole', {
       body: msg.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

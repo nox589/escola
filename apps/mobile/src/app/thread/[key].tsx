@@ -37,7 +37,7 @@ async function reauthenticate(prompt: string): Promise<boolean> {
  * A conversation with one teacher or office, chat-style. Their messages appear in the parent's
  * language with the original one tap away. To reply: write in your language, see the exact polite
  * version the school will get plus a back-translation, then send (or copy it into GestIB while
- * sending from clases is switched off).
+ * sending from MiCole is switched off).
  */
 export default function ThreadScreen() {
   const { key } = useLocalSearchParams<{ key: string }>();
@@ -69,7 +69,7 @@ export default function ThreadScreen() {
   const [note, setNote] = useState<string | null>(null);
   const scroller = useRef<ScrollViewInstance>(null);
 
-  // Opening the conversation marks its messages read in clases (never in GestIB).
+  // Opening the conversation marks its messages read in MiCole (never in GestIB).
   useEffect(() => {
     const unread = q.data?.messages.filter((m) => !m.read) ?? [];
     if (!unread.length) return;

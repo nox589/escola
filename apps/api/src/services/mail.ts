@@ -38,26 +38,30 @@ export class PostmarkMailer implements Mailer {
 
 const COPY: Record<string, { subject: string; body: (link: string) => string }> = {
   en: {
-    subject: 'Your sign-in link',
-    body: (l) => `Tap to sign in to Escola:\n\n${l}\n\nThe link works once and expires in 15 minutes.`,
+    subject: 'Your MiCole sign-in link',
+    body: (l) => `Tap to sign in to MiCole:\n\n${l}\n\nThe link works once and expires in 15 minutes.`,
   },
   es: {
     subject: 'Tu enlace de acceso',
-    body: (l) => `Pulsa para entrar en Escola:\n\n${l}\n\nEl enlace funciona una vez y caduca en 15 minutos.`,
+    body: (l) => `Pulsa para entrar en MiCole:\n\n${l}\n\nEl enlace funciona una vez y caduca en 15 minutos.`,
   },
   ca: {
     subject: "El teu enllaç d'accés",
-    body: (l) => `Toca per entrar a Escola:\n\n${l}\n\nL'enllaç funciona una vegada i caduca en 15 minuts.`,
+    body: (l) => `Toca per entrar a MiCole:\n\n${l}\n\nL'enllaç funciona una vegada i caduca en 15 minuts.`,
   },
   de: {
     subject: 'Dein Anmeldelink',
     body: (l) =>
-      `Tippe, um dich bei Escola anzumelden:\n\n${l}\n\nDer Link gilt einmal und läuft in 15 Minuten ab.`,
+      `Tippe, um dich bei MiCole anzumelden:\n\n${l}\n\nDer Link gilt einmal und läuft in 15 Minuten ab.`,
+  },
+  it: {
+    subject: 'Il tuo link di accesso',
+    body: (l) => `Tocca per accedere a MiCole:\n\n${l}\n\nIl link funziona una volta e scade tra 15 minuti.`,
   },
   fr: {
     subject: 'Votre lien de connexion',
     body: (l) =>
-      `Touchez pour vous connecter à Escola :\n\n${l}\n\nLe lien fonctionne une fois et expire dans 15 minutes.`,
+      `Touchez pour vous connecter à MiCole :\n\n${l}\n\nLe lien fonctionne une fois et expire dans 15 minutes.`,
   },
 };
 export const magicLinkEmail = (locale: string, link: string) => {

@@ -6,14 +6,14 @@ import { Icon } from './Icon';
 
 const wordmark = require('../../assets/wordmark.png');
 
-/** The clases wordmark (aspect 1442 x 381). */
+/** The MiCole wordmark (aspect 1481 x 387). */
 export function Wordmark({ height = 28, tint }: { height?: number; tint?: string }) {
   return (
     <Image
       source={wordmark}
-      accessibilityLabel="clases"
+      accessibilityLabel="MiCole"
       tintColor={tint}
-      style={{ height, width: (height * 1442) / 381 }}
+      style={{ height, width: (height * 1481) / 387 }}
       resizeMode="contain"
     />
   );

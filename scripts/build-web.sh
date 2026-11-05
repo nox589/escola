@@ -18,7 +18,7 @@ const tags = [
   "<link rel=\"apple-touch-icon\" href=\"/apple-touch-icon.png\">",
   "<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">",
   "<meta name=\"mobile-web-app-capable\" content=\"yes\">",
-  "<meta name=\"apple-mobile-web-app-title\" content=\"clases\">",
+  "<meta name=\"apple-mobile-web-app-title\" content=\"MiCole\">",
   "<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"default\">",
   "<meta name=\"theme-color\" content=\"#FAF7F0\">",
 ].join("");

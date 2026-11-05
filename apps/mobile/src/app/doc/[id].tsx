@@ -46,7 +46,7 @@ function loadPdfJs(): Promise<PdfLib> {
 }
 
 /**
- * Opens a school document inside clases. Web (the beta): PDF pages are drawn in the app with
+ * Opens a school document inside MiCole. Web (the beta): PDF pages are drawn in the app with
  * pdf.js; images are shown directly. Native: the in-app browser sheet, which stays in the app.
  */
 export default function Doc() {

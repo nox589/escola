@@ -111,7 +111,7 @@ export default function Welcome() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Image
             source={wordmarkLight}
-            accessibilityLabel="clases"
+            accessibilityLabel="MiCole"
             style={{ width: 168, height: 44 }}
             resizeMode="contain"
           />

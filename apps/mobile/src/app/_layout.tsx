@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
-/** Web: load Figtree (clases typeface) once and apply it everywhere. */
+/** Web: load Figtree (MiCole typeface) once and apply it everywhere. */
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('clases-font')) {
   const link = document.createElement('link');
   link.id = 'clases-font';
@@ -26,7 +26,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
   style.textContent =
     "body, div, span, input, textarea, button { font-family: 'Figtree', system-ui, -apple-system, sans-serif !important; } body { background: #FAF7F0; }";
   document.head.appendChild(style);
-  document.title = 'clases';
+  document.title = 'MiCole';
 }
 
 function useNotificationTaps() {

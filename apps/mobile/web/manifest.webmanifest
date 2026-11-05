@@ -1,6 +1,6 @@
 {
-  "name": "clases",
-  "short_name": "clases",
+  "name": "MiCole",
+  "short_name": "MiCole",
   "description": "School messages from GestIB, in your language.",
   "start_url": "/",
   "scope": "/",

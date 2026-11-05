@@ -15,7 +15,7 @@ import {
 import { api } from '@/lib/api';
 import { signInWithToken } from '@/lib/session';
 
-/** Sign in with an emailed link (no clases password). Same teal look as Welcome. */
+/** Sign in with an emailed link (no MiCole password). Same teal look as Welcome. */
 export default function SignIn() {
   const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');

@@ -17,7 +17,7 @@ export type IconName =
   | 'clip'
   | 'sparkle';
 
-/** Stroke icons drawn to match the clases mockup. Decorative unless given a label by the parent. */
+/** Stroke icons drawn to match the MiCole mockup. Decorative unless given a label by the parent. */
 export function Icon({
   name,
   size = 22,

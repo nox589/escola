@@ -45,7 +45,7 @@ export default function Item() {
   const canReply =
     enabled.data?.kinds.some((k) => k.kind === 'reply_message' && k.enabled) && it.section === 'message';
 
-  // Until sending from clases is switched on, open the same page in GestIB (the parent signs in there).
+  // Until sending from MiCole is switched on, open the same page in GestIB (the parent signs in there).
   const GESTIB_PAGE: Record<string, string> = {
     message: 'missatges',
     circular: 'circulars',

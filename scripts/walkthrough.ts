@@ -136,10 +136,10 @@ async function run(page: Page) {
   await page.getByText('Needs you', { exact: true }).first().waitFor({ timeout: 30_000 });
   if (process.env.SEED_DB_URL) await page.getByText(/needs a reason/).first().waitFor();
   if (process.env.IPHONE) {
-    await page.getByText('Add clases to your Home Screen').waitFor();
+    await page.getByText('Add MiCole to your Home Screen').waitFor();
     await shot(page, '06-today-iphone-setup');
     await page.getByRole('button', { name: 'Later' }).click();
-    await page.getByText('Add clases to your Home Screen').waitFor({ state: 'detached' });
+    await page.getByText('Add MiCole to your Home Screen').waitFor({ state: 'detached' });
   }
   await shot(page, '06-today');
 

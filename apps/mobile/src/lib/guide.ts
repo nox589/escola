@@ -25,7 +25,7 @@ export interface GuideText {
 
 const en: GuideText = {
   title: 'Get your GestIB password',
-  intro: 'clases signs in to GestIB Famílies for you, so you need a GestIB username and password. Tap a topic.',
+  intro: 'MiCole signs in to GestIB Famílies for you, so you need a GestIB username and password. Tap a topic.',
   sections: [
     {
       id: 'account',
@@ -56,7 +56,7 @@ const en: GuideText = {
         '6 to 30 characters, starting with a letter, with at least one number.',
         'No @ ñ ç ! $ % / * + and no accents.',
         'Can’t reuse any of your last 4 passwords.',
-        'It lasts 1 year, then you reset it again. clases will tell you when GestIB asks for a new one.',
+        'It lasts 1 year, then you reset it again. MiCole will tell you when GestIB asks for a new one.',
       ],
     },
     {
@@ -65,7 +65,7 @@ const en: GuideText = {
       bullets: [
         '"Les dades no coincideixen" (The details don’t match): the school office needs to update your contact details.',
         'The reset said it worked but you still can’t sign in: a known GestIB fault. Ask the school office to push the change again, then wait about 10 minutes.',
-        'Digital certificate or Cl@ve: these can open GestIB in a browser, but clases needs a username and password.',
+        'Digital certificate or Cl@ve: these can open GestIB in a browser, but MiCole needs a username and password.',
       ],
     },
     {
@@ -88,7 +88,7 @@ const en: GuideText = {
 
 const es: GuideText = {
   title: 'Consigue tu contraseña de GestIB',
-  intro: 'clases entra en GestIB Famílies por ti, así que necesitas un usuario y una contraseña de GestIB. Toca un tema.',
+  intro: 'MiCole entra en GestIB Famílies por ti, así que necesitas un usuario y una contraseña de GestIB. Toca un tema.',
   sections: [
     {
       id: 'account',
@@ -119,7 +119,7 @@ const es: GuideText = {
         'De 6 a 30 caracteres, empieza por letra y con al menos un número.',
         'Sin @ ñ ç ! $ % / * + ni acentos.',
         'No puede repetir ninguna de las 4 últimas.',
-        'Dura 1 año; después se restablece otra vez. clases te avisará cuando GestIB pida una nueva.',
+        'Dura 1 año; después se restablece otra vez. MiCole te avisará cuando GestIB pida una nueva.',
       ],
     },
     {
@@ -128,7 +128,7 @@ const es: GuideText = {
       bullets: [
         '«Les dades no coincideixen» (los datos no coinciden): secretaría tiene que actualizar tus datos de contacto.',
         'El cambio dice que ha ido bien pero no puedes entrar: es un fallo conocido de GestIB. Pide a secretaría que lo vuelva a enviar y espera unos 10 minutos.',
-        'Certificado digital o Cl@ve: sirven para entrar en GestIB desde el navegador, pero clases necesita usuario y contraseña.',
+        'Certificado digital o Cl@ve: sirven para entrar en GestIB desde el navegador, pero MiCole necesita usuario y contraseña.',
       ],
     },
     {
@@ -151,7 +151,7 @@ const es: GuideText = {
 
 const ca: GuideText = {
   title: 'Aconsegueix la contrasenya de GestIB',
-  intro: 'clases entra a GestIB Famílies per tu, així que necessites un usuari i una contrasenya de GestIB. Toca un tema.',
+  intro: 'MiCole entra a GestIB Famílies per tu, així que necessites un usuari i una contrasenya de GestIB. Toca un tema.',
   sections: [
     {
       id: 'account',
@@ -182,7 +182,7 @@ const ca: GuideText = {
         'De 6 a 30 caràcters, comença per lletra i amb almenys un número.',
         'Sense @ ñ ç ! $ % / * + ni accents.',
         'No pot repetir cap de les 4 darreres.',
-        'Dura 1 any; després es restableix de nou. clases t’avisarà quan GestIB en demani una de nova.',
+        'Dura 1 any; després es restableix de nou. MiCole t’avisarà quan GestIB en demani una de nova.',
       ],
     },
     {
@@ -191,7 +191,7 @@ const ca: GuideText = {
       bullets: [
         '«Les dades no coincideixen»: secretaria ha d’actualitzar les teves dades de contacte.',
         'El canvi diu que ha anat bé però no pots entrar: és una errada coneguda de GestIB. Demana a secretaria que el torni a enviar i espera uns 10 minuts.',
-        'Certificat digital o Cl@ve: serveixen per entrar a GestIB des del navegador, però clases necessita usuari i contrasenya.',
+        'Certificat digital o Cl@ve: serveixen per entrar a GestIB des del navegador, però MiCole necessita usuari i contrasenya.',
       ],
     },
     {
@@ -214,7 +214,7 @@ const ca: GuideText = {
 
 const de: GuideText = {
   title: 'Dein GestIB-Passwort bekommen',
-  intro: 'clases meldet sich für dich bei GestIB Famílies an. Dafür brauchst du einen GestIB-Benutzernamen und ein Passwort. Tippe auf ein Thema.',
+  intro: 'MiCole meldet sich für dich bei GestIB Famílies an. Dafür brauchst du einen GestIB-Benutzernamen und ein Passwort. Tippe auf ein Thema.',
   sections: [
     {
       id: 'account',
@@ -245,7 +245,7 @@ const de: GuideText = {
         '6 bis 30 Zeichen, beginnt mit einem Buchstaben, mindestens eine Zahl.',
         'Kein @ ñ ç ! $ % / * + und keine Akzente.',
         'Keines der letzten 4 Passwörter wiederverwenden.',
-        'Gilt 1 Jahr, dann erneut zurücksetzen. clases sagt dir Bescheid, wenn GestIB ein neues verlangt.',
+        'Gilt 1 Jahr, dann erneut zurücksetzen. MiCole sagt dir Bescheid, wenn GestIB ein neues verlangt.',
       ],
     },
     {
@@ -254,7 +254,7 @@ const de: GuideText = {
       bullets: [
         '„Les dades no coincideixen“ (Daten stimmen nicht überein): Das Sekretariat muss deine Kontaktdaten aktualisieren.',
         'Zurücksetzen hat angeblich geklappt, Anmeldung geht trotzdem nicht: ein bekannter GestIB-Fehler. Das Sekretariat muss die Änderung erneut senden, dann etwa 10 Minuten warten.',
-        'Digitales Zertifikat oder Cl@ve: öffnet GestIB im Browser, aber clases braucht Benutzername und Passwort.',
+        'Digitales Zertifikat oder Cl@ve: öffnet GestIB im Browser, aber MiCole braucht Benutzername und Passwort.',
       ],
     },
     {
@@ -277,7 +277,7 @@ const de: GuideText = {
 
 const fr: GuideText = {
   title: 'Obtenir votre mot de passe GestIB',
-  intro: 'clases se connecte à GestIB Famílies pour vous : il vous faut un identifiant et un mot de passe GestIB. Touchez un sujet.',
+  intro: 'MiCole se connecte à GestIB Famílies pour vous : il vous faut un identifiant et un mot de passe GestIB. Touchez un sujet.',
   sections: [
     {
       id: 'account',
@@ -308,7 +308,7 @@ const fr: GuideText = {
         '6 à 30 caractères, commence par une lettre, au moins un chiffre.',
         'Pas de @ ñ ç ! $ % / * + ni d’accents.',
         'Pas l’un des 4 derniers mots de passe.',
-        'Valable 1 an, puis il faut le réinitialiser. clases vous préviendra quand GestIB en demande un nouveau.',
+        'Valable 1 an, puis il faut le réinitialiser. MiCole vous préviendra quand GestIB en demande un nouveau.',
       ],
     },
     {
@@ -317,7 +317,7 @@ const fr: GuideText = {
       bullets: [
         '« Les dades no coincideixen » (les données ne correspondent pas) : le secrétariat doit mettre à jour vos coordonnées.',
         'La réinitialisation a « réussi » mais la connexion échoue : un défaut connu de GestIB. Demandez au secrétariat de renvoyer la modification, puis attendez environ 10 minutes.',
-        'Certificat numérique ou Cl@ve : ils ouvrent GestIB dans un navigateur, mais clases a besoin d’un identifiant et d’un mot de passe.',
+        'Certificat numérique ou Cl@ve : ils ouvrent GestIB dans un navigateur, mais MiCole a besoin d’un identifiant et d’un mot de passe.',
       ],
     },
     {
@@ -340,7 +340,7 @@ const fr: GuideText = {
 
 const it: GuideText = {
   title: 'Ottieni la password di GestIB',
-  intro: 'clases accede a GestIB Famílies per te, quindi ti servono nome utente e password di GestIB. Tocca un argomento.',
+  intro: 'MiCole accede a GestIB Famílies per te, quindi ti servono nome utente e password di GestIB. Tocca un argomento.',
   sections: [
     {
       id: 'account',
@@ -371,7 +371,7 @@ const it: GuideText = {
         'Da 6 a 30 caratteri, inizia con una lettera e contiene almeno un numero.',
         'Niente @ ñ ç ! $ % / * + né accenti.',
         'Non puoi riusare nessuna delle ultime 4.',
-        'Dura 1 anno, poi va reimpostata. clases ti avvisa quando GestIB ne chiede una nuova.',
+        'Dura 1 anno, poi va reimpostata. MiCole ti avvisa quando GestIB ne chiede una nuova.',
       ],
     },
     {
@@ -380,7 +380,7 @@ const it: GuideText = {
       bullets: [
         '«Les dades no coincideixen» (i dati non coincidono): la segreteria deve aggiornare i tuoi recapiti.',
         'Il ripristino dice che è andato bene ma non riesci ad accedere: è un difetto noto di GestIB. Chiedi alla segreteria di reinviare la modifica e attendi circa 10 minuti.',
-        'Certificato digitale o Cl@ve: aprono GestIB nel browser, ma clases ha bisogno di nome utente e password.',
+        'Certificato digitale o Cl@ve: aprono GestIB nel browser, ma MiCole ha bisogno di nome utente e password.',
       ],
     },
     {

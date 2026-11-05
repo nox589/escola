@@ -1,4 +1,4 @@
-/** clases palette (light, warm ivory). The brand is light-only for now. */
+/** MiCole palette (light, warm ivory). The brand is light-only for now. */
 const light = {
   bg: '#FAF7F0', // warm ivory
   card: '#FFFFFF',

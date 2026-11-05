@@ -10,12 +10,12 @@ type L = 'en' | 'es' | 'ca' | 'de' | 'fr' | 'it';
 const pick = (l: string): L => (['en', 'es', 'ca', 'de', 'fr', 'it'].includes(l) ? (l as L) : 'en');
 
 const T: Record<L, { title: string; toDo: (n: number) => string; fresh: (n: number) => string; absence: string; absenceBody: string }> = {
-  en: { title: 'Today at school', toDo: (n) => `${n} to do`, fresh: (n) => `${n} new`, absence: 'Attendance', absenceBody: 'New absence recorded. Open clases to see it.' },
-  es: { title: 'Hoy en el cole', toDo: (n) => `${n} pendiente${n === 1 ? '' : 's'}`, fresh: (n) => `${n} nuevo${n === 1 ? '' : 's'}`, absence: 'Asistencia', absenceBody: 'Nueva falta registrada. Ábrela en clases.' },
-  ca: { title: 'Avui a l’escola', toDo: (n) => `${n} pendent${n === 1 ? '' : 's'}`, fresh: (n) => `${n} nou${n === 1 ? '' : 's'}`, absence: 'Assistència', absenceBody: 'Nova falta registrada. Obre-la a clases.' },
-  de: { title: 'Heute in der Schule', toDo: (n) => `${n} offen`, fresh: (n) => `${n} neu`, absence: 'Anwesenheit', absenceBody: 'Neue Fehlzeit eingetragen. In clases ansehen.' },
-  it: { title: 'Oggi a scuola', toDo: (n) => `${n} da fare`, fresh: (n) => `${n} novità`, absence: 'Presenze', absenceBody: 'Nuova assenza registrata. Aprila in clases.' },
-  fr: { title: 'Aujourd’hui à l’école', toDo: (n) => `${n} à faire`, fresh: (n) => `${n} nouveau${n === 1 ? '' : 'x'}`, absence: 'Présence', absenceBody: 'Nouvelle absence enregistrée. Voir dans clases.' },
+  en: { title: 'Today at school', toDo: (n) => `${n} to do`, fresh: (n) => `${n} new`, absence: 'Attendance', absenceBody: 'New absence recorded. Open MiCole to see it.' },
+  es: { title: 'Hoy en el cole', toDo: (n) => `${n} pendiente${n === 1 ? '' : 's'}`, fresh: (n) => `${n} nuevo${n === 1 ? '' : 's'}`, absence: 'Asistencia', absenceBody: 'Nueva falta registrada. Ábrela en MiCole.' },
+  ca: { title: 'Avui a l’escola', toDo: (n) => `${n} pendent${n === 1 ? '' : 's'}`, fresh: (n) => `${n} nou${n === 1 ? '' : 's'}`, absence: 'Assistència', absenceBody: 'Nova falta registrada. Obre-la a MiCole.' },
+  de: { title: 'Heute in der Schule', toDo: (n) => `${n} offen`, fresh: (n) => `${n} neu`, absence: 'Anwesenheit', absenceBody: 'Neue Fehlzeit eingetragen. In MiCole ansehen.' },
+  it: { title: 'Oggi a scuola', toDo: (n) => `${n} da fare`, fresh: (n) => `${n} novità`, absence: 'Presenze', absenceBody: 'Nuova assenza registrata. Aprila in MiCole.' },
+  fr: { title: 'Aujourd’hui à l’école', toDo: (n) => `${n} à faire`, fresh: (n) => `${n} nouveau${n === 1 ? '' : 'x'}`, absence: 'Présence', absenceBody: 'Nouvelle absence enregistrée. Voir dans MiCole.' },
 };
 
 /** Madrid weekday (1 = Monday) and HH:MM. */

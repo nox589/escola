@@ -68,8 +68,8 @@ export function TealWordmark({ height = 40 }: { height?: number }) {
   return (
     <Image
       source={wordmarkLight}
-      accessibilityLabel="clases"
-      style={{ height, width: (height * 1442) / 381 }}
+      accessibilityLabel="MiCole"
+      style={{ height, width: (height * 1481) / 387 }}
       resizeMode="contain"
     />
   );
