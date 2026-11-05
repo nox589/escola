@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 /**
  * Worker process: BullMQ consumers for sync / enrich / notify / submit plus the scheduler tick.
  *   pnpm --filter @escola/sync-worker dev
@@ -134,6 +135,27 @@ async function reprocessStaleEnrichment() {
   for (const familyId of families) {
     const rows = await withFamily(pool, familyId, (db) =>
       db.select({ id: schema.items.id, c: schema.items.contentHash, e: schema.items.enrichedHash }).from(schema.items),
+    );
+    // Temporary diagnostic (no personal data): the children table shape, names and refs hashed.
+    const kids = await withFamily(pool, familyId, (db) =>
+      db.select({ id: schema.children.id, acc: schema.children.portalAccountId, ref: schema.children.portalChildRef, name: schema.children.displayName, at: schema.children.createdAt }).from(schema.children),
+    );
+    const counts = await withFamily(pool, familyId, (db) => db.select({ c: schema.items.childId }).from(schema.items));
+    const h = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 8);
+    log.info(
+      {
+        children: kids.map((k) => ({
+          id: k.id.slice(0, 8),
+          acc: k.acc.slice(0, 8),
+          ref: h(k.ref),
+          name: h(k.name),
+          words: k.name.trim().split(/\s+/).length,
+          created: k.at.toISOString(),
+          items: counts.filter((x) => x.c === k.id).length,
+        })),
+        unattributed: counts.filter((x) => !x.c).length,
+      },
+      'children diagnostic',
     );
     const stale = rows.filter((r) => r.e !== enrichMark(r.c, providers.translate.model)).map((r) => r.id);
     for (let i = 0; i < stale.length; i += 10)
