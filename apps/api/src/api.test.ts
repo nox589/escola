@@ -305,6 +305,9 @@ d('API', () => {
     const thread = (await app.inject({ url: `/v1/threads/${threads[0].key}`, headers: as(A.accessToken) })).json();
     expect(thread.messages[0]).toMatchObject({ body: 'We propose a meeting.', original: { body: 'Us proposam una reunió.' } });
     expect((await app.inject({ url: '/v1/threads', headers: as(B.accessToken) })).json()).toEqual([]);
+    // Long official sender names make long keys; they must route (was 414 at Fastify's 100-char default).
+    const longKey = Buffer.from("DIRECCIÓ GENERAL D'UNIVERSITATS, RECERCA I ENSENYAMENTS ARTÍSTICS SUPERIORS").toString('base64url');
+    expect((await app.inject({ url: `/v1/threads/${longKey}`, headers: as(A.accessToken) })).statusCode).toBe(404);
   });
 
   it('reception: preview hash, submit mandate, edit invalidates, confirm queues exactly once', async () => {

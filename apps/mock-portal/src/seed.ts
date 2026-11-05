@@ -31,6 +31,14 @@ export function defaultChildren(): MockChild[] {
             sender: 'Tutora 3r B',
             postedAt: '2026-11-02T12:00:00+01:00',
           },
+          {
+            // Long official sender with accents, an apostrophe and a double space (as seen in GestIB).
+            ref: 'msg-2',
+            title: 'Beques per a estudis postobligatoris',
+            body: 'Informació sobre les beques del curs vinent: https://www.caib.es/beques',
+            sender: "DIRECCIÓ GENERAL  D'UNIVERSITATS, RECERCA I ENSENYAMENTS ARTÍSTICS SUPERIORS",
+            postedAt: '2026-06-10T10:00:00+02:00',
+          },
         ],
       },
     },

@@ -54,7 +54,12 @@ export default function Reply() {
         ? await api<Submission>(`/submissions/${sub.id}`, { method: 'PATCH', body })
         : await api<Submission>('/submissions', {
             // Family-wide messages have no child; GestIB replies are per message, so any child of the family will do.
-            body: { kind: 'reply_message', child_id: item.data.child?.id ?? kids.data?.[0]?.id, item_id: itemId, ...body },
+            body: {
+              kind: 'reply_message',
+              child_id: item.data.child?.id ?? kids.data?.[0]?.id,
+              item_id: itemId,
+              ...body,
+            },
           });
       setSub(s);
     } catch (e) {

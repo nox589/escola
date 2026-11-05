@@ -29,6 +29,13 @@ export const en = {
       "editPhone": "Change phone number",
       "find": "Find the number",
     },
+    "period": {
+      "current": "Current",
+      "past": "Past",
+    },
+    "nothingPast": "Nothing older here.",
+    "callSchool": "Call school",
+    "whichSchool": "Call which school?",
     "chat": {
       "showOriginal": "Show original ({{lang}})",
       "showTranslation": "Show translation",

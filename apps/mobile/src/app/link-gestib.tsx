@@ -87,7 +87,11 @@ export default function LinkGestib() {
       <P muted small>
         {t('link.clave')}
       </P>
-      <Pressable onPress={() => router.push('/guide')} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
+      <Pressable
+        onPress={() => router.push('/guide')}
+        accessibilityRole="link"
+        style={{ minHeight: 44, justifyContent: 'center' }}
+      >
         <Text style={{ color: c.accent, fontSize: font.small, fontWeight: '700' }}>{t('link.help')} ›</Text>
       </Pressable>
       <Card>

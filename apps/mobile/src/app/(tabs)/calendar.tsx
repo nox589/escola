@@ -11,8 +11,10 @@ import { api, type CalendarEntry } from '@/lib/api';
 import { useChildren, useProfiles } from '@/lib/hooks';
 import { font, space, useTheme } from '@/lib/theme';
 
-const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const madridYmd = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(iso));
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const madridYmd = (iso: string) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(iso));
 function mondayOf(d: Date) {
   const m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
@@ -34,7 +36,10 @@ export default function Week() {
     return m;
   }, [offset]);
   const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
-  const days = Array.from({ length: 7 }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+  const days = Array.from(
+    { length: 7 },
+    (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i),
+  );
   const todayKey = ymd(new Date());
 
   const week = useQuery({
@@ -60,11 +65,21 @@ export default function Week() {
       .filter((p): p is NonNullable<typeof p> => !!p)
       .map((p) => {
         const s = p.timetable.filter((x) => x.day === wd).sort((a, b) => a.start.localeCompare(b.start));
-        return s.length ? { id: p.id, name: p.displayName, colour: p.colour, count: s.length, from: s[0]!.start, to: s[s.length - 1]!.end } : null;
+        return s.length
+          ? {
+              id: p.id,
+              name: p.displayName,
+              colour: p.colour,
+              count: s.length,
+              from: s[0]!.start,
+              to: s[s.length - 1]!.end,
+            }
+          : null;
       })
       .filter((x): x is NonNullable<typeof x> => !!x);
   };
-  const colourOf = (e: CalendarEntry) => e.child?.colour ?? kids.data?.find((k) => k.id === e.childId)?.colour ?? null;
+  const colourOf = (e: CalendarEntry) =>
+    e.child?.colour ?? kids.data?.find((k) => k.id === e.childId)?.colour ?? null;
   const byDay = new Map<string, CalendarEntry[]>();
   for (const e of week.data ?? []) {
     const k = madridYmd(e.startsAt);
@@ -73,40 +88,70 @@ export default function Week() {
 
   // School-calendar days off ahead, collapsed into ranges ("Christmas holidays: 22 Dec to 7 Jan").
   const comingUp = useMemo(() => {
-    const school = (ahead.data ?? []).filter((e) => e.kind === 'school').sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    const school = (ahead.data ?? [])
+      .filter((e) => e.kind === 'school')
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     const out: { title: string; from: string; to: string }[] = [];
     for (const e of school) {
       const last = out[out.length - 1];
       const d = madridYmd(e.startsAt);
-      if (last && last.title === e.title && (new Date(d).getTime() - new Date(last.to).getTime()) / 86400_000 <= 3) last.to = d;
+      if (
+        last &&
+        last.title === e.title &&
+        (new Date(d).getTime() - new Date(last.to).getTime()) / 86400_000 <= 3
+      )
+        last.to = d;
       else out.push({ title: e.title, from: d, to: d });
     }
     return out.slice(0, 5);
   }, [ahead.data]);
-  const fmt = (d: string) => new Intl.DateTimeFormat(loc, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(`${d}T12:00:00`));
+  const fmt = (d: string) =>
+    new Intl.DateTimeFormat(loc, { weekday: 'short', day: 'numeric', month: 'short' }).format(
+      new Date(`${d}T12:00:00`),
+    );
 
-  const shown = days.filter((d) => (day ? ymd(d) === day : true)).filter((d) => byDay.get(ymd(d))?.length || classesOn(d).length);
+  const shown = days
+    .filter((d) => (day ? ymd(d) === day : true))
+    .filter((d) => byDay.get(ymd(d))?.length || classesOn(d).length);
   const kindLabel = (k: string) => t(`cl.kinds.${k}` as 'cl.kinds.event', { defaultValue: k });
-  const kindColour = (k: string) => (k === 'deadline' ? c.warn : k === 'school' ? c.success : k === 'evaluation' ? '#6B5B95' : c.accent);
+  const kindColour = (k: string) =>
+    k === 'deadline' ? c.warn : k === 'school' ? c.success : k === 'evaluation' ? '#6B5B95' : c.accent;
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <ScrollView contentContainerStyle={{ padding: space.xl, gap: 16, paddingBottom: space.xxl }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.s }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: space.s,
+          }}
+        >
           <Text accessibilityRole="header" style={{ color: c.ink, fontSize: font.title, fontWeight: '700' }}>
-            {offset === 0 ? t('cl.thisWeek') : `${days[0]!.getDate()}–${days[6]!.getDate()} ${new Intl.DateTimeFormat(loc, { month: 'short' }).format(days[6]!)}`}
+            {offset === 0
+              ? t('cl.thisWeek')
+              : `${days[0]!.getDate()}–${days[6]!.getDate()} ${new Intl.DateTimeFormat(loc, { month: 'short' }).format(days[6]!)}`}
           </Text>
           <View style={{ flexDirection: 'row', gap: 4 }}>
-            <Pressable accessibilityLabel={t('cl.prevWeek')} onPress={() => {
+            <Pressable
+              accessibilityLabel={t('cl.prevWeek')}
+              onPress={() => {
                 setOffset(offset - 1);
                 setDay(null);
-              }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              }}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
               <Icon name="back" color={c.ink} />
             </Pressable>
-            <Pressable accessibilityLabel={t('cl.nextWeek')} onPress={() => {
+            <Pressable
+              accessibilityLabel={t('cl.nextWeek')}
+              onPress={() => {
                 setOffset(offset + 1);
                 setDay(null);
-              }} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              }}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
               <Icon name="chevron" color={c.ink} />
             </Pressable>
           </View>
@@ -114,13 +159,25 @@ export default function Week() {
 
         <AskBar hint={t('cl.askWeek')} />
 
-        <View style={{ flexDirection: 'row', gap: 4, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 16, padding: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 4,
+            backgroundColor: c.card,
+            borderWidth: 1,
+            borderColor: c.line,
+            borderRadius: 16,
+            padding: 8,
+          }}
+        >
           {days.map((d) => {
             const k = ymd(d);
             const entries = byDay.get(k) ?? [];
             const sel = day === k;
             const isToday = k === todayKey;
-            const colours = [...new Set(entries.filter((e) => e.kind !== 'school').map((e) => colourOf(e) ?? c.line))].slice(0, 3);
+            const colours = [
+              ...new Set(entries.filter((e) => e.kind !== 'school').map((e) => colourOf(e) ?? c.line)),
+            ].slice(0, 3);
             const off = entries.some((e) => e.kind === 'school');
             return (
               <Pressable
@@ -141,7 +198,15 @@ export default function Week() {
                 <Text style={{ fontSize: 11, fontWeight: '600', color: sel ? '#FFFFFF' : c.muted }}>
                   {new Intl.DateTimeFormat(loc, { weekday: 'short' }).format(d)}
                 </Text>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: sel ? '#FFFFFF' : off ? c.success : c.ink }}>{d.getDate()}</Text>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '700',
+                    color: sel ? '#FFFFFF' : off ? c.success : c.ink,
+                  }}
+                >
+                  {d.getDate()}
+                </Text>
                 <View style={{ flexDirection: 'row', gap: 3, height: 6 }}>
                   {colours.map((col) => (
                     <Dot key={col} colour={col} size={6} />
@@ -157,7 +222,11 @@ export default function Week() {
           </Pressable>
         ) : null}
 
-        {!week.isLoading && !shown.length ? <P muted small>{t('cl.nothingWeek')}</P> : null}
+        {!week.isLoading && !shown.length ? (
+          <P muted small>
+            {t('cl.nothingWeek')}
+          </P>
+        ) : null}
         {shown.map((d) => (
           <View key={ymd(d)} style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -165,7 +234,18 @@ export default function Week() {
                 {new Intl.DateTimeFormat(loc, { weekday: 'long', day: 'numeric' }).format(d)}
               </Text>
               {ymd(d) === todayKey ? (
-                <Text style={{ fontSize: 11, fontWeight: '700', backgroundColor: c.lime, color: c.ink, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '700',
+                    backgroundColor: c.lime,
+                    color: c.ink,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                  }}
+                >
                   {t('cl.today').toUpperCase()}
                 </Text>
               ) : null}
@@ -173,9 +253,17 @@ export default function Week() {
             {classesOn(d).map((k) => (
               <Pressable
                 key={`cls-${k.id}`}
-                onPress={() => router.push({ pathname: '/child/[id]', params: { id: k.id, tab: 'timetable' } })}
+                onPress={() =>
+                  router.push({ pathname: '/child/[id]', params: { id: k.id, tab: 'timetable' } })
+                }
                 accessibilityRole="link"
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, minHeight: 32 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  paddingHorizontal: 4,
+                  minHeight: 32,
+                }}
               >
                 <Dot colour={k.colour} size={6} />
                 <Text style={{ color: c.mutedOnBg, fontSize: 13 }}>
@@ -189,14 +277,36 @@ export default function Week() {
                 key={e.id}
                 disabled={!e.itemId}
                 onPress={() => e.itemId && router.push({ pathname: '/item/[id]', params: { id: e.itemId } })}
-                style={{ backgroundColor: e.kind === 'school' ? c.accentSoft : c.card, borderWidth: e.kind === 'school' ? 0 : 1, borderColor: c.line, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}
+                style={{
+                  backgroundColor: e.kind === 'school' ? c.accentSoft : c.card,
+                  borderWidth: e.kind === 'school' ? 0 : 1,
+                  borderColor: c.line,
+                  borderRadius: 14,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  gap: 6,
+                }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Dot colour={e.kind === 'school' ? c.success : colourOf(e)} />
-                  <Text style={{ color: c.ink, fontSize: 12, fontWeight: '600' }}>{e.child?.name ?? t('cl.family')}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: kindColour(e.kind) }}>{kindLabel(e.kind)}</Text>
+                  <Text style={{ color: c.ink, fontSize: 12, fontWeight: '600' }}>
+                    {e.child?.name ?? t('cl.family')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      letterSpacing: 0.6,
+                      textTransform: 'uppercase',
+                      color: kindColour(e.kind),
+                    }}
+                  >
+                    {kindLabel(e.kind)}
+                  </Text>
                 </View>
-                <Text style={{ color: c.ink, fontSize: 15, fontWeight: '600', lineHeight: 20 }}>{e.title}</Text>
+                <Text style={{ color: c.ink, fontSize: 15, fontWeight: '600', lineHeight: 20 }}>
+                  {e.title}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -204,12 +314,19 @@ export default function Week() {
 
         {comingUp.length ? (
           <View style={{ gap: 8 }}>
-            <Text accessibilityRole="header" style={{ color: c.ink, fontSize: 15, fontWeight: '700' }}>{t('cl.comingUp')}</Text>
+            <Text accessibilityRole="header" style={{ color: c.ink, fontSize: 15, fontWeight: '700' }}>
+              {t('cl.comingUp')}
+            </Text>
             <View style={{ backgroundColor: c.accentSoft, borderRadius: 14, padding: 14, gap: 10 }}>
               {comingUp.map((r) => (
-                <View key={r.from + r.title} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+                <View
+                  key={r.from + r.title}
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}
+                >
                   <Text style={{ color: c.ink, fontSize: 14, flex: 1 }}>{r.title}</Text>
-                  <Text style={{ color: c.ink, fontSize: 14, fontWeight: '700' }}>{r.from === r.to ? fmt(r.from) : `${fmt(r.from)} – ${fmt(r.to)}`}</Text>
+                  <Text style={{ color: c.ink, fontSize: 14, fontWeight: '700' }}>
+                    {r.from === r.to ? fmt(r.from) : `${fmt(r.from)} – ${fmt(r.to)}`}
+                  </Text>
                 </View>
               ))}
             </View>

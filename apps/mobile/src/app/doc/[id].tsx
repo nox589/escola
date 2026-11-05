@@ -14,11 +14,15 @@ const PDFJS_WORKER = '/pdfjs/pdf.worker.min.js';
 
 type PdfPage = {
   getViewport: (o: { scale: number }) => { width: number; height: number };
-  render: (o: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => { promise: Promise<void> };
+  render: (o: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => {
+    promise: Promise<void>;
+  };
 };
 type PdfLib = {
   GlobalWorkerOptions: { workerSrc: string };
-  getDocument: (src: { data: Uint8Array }) => { promise: Promise<{ numPages: number; getPage: (n: number) => Promise<PdfPage> }> };
+  getDocument: (src: { data: Uint8Array }) => {
+    promise: Promise<{ numPages: number; getPage: (n: number) => Promise<PdfPage> }>;
+  };
 };
 
 let pdfjs: Promise<PdfLib> | null = null;
@@ -46,13 +50,13 @@ function loadPdfJs(): Promise<PdfLib> {
  * pdf.js; images are shown directly. Native: the in-app browser sheet, which stays in the app.
  */
 export default function Doc() {
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const { id, name, file } = useLocalSearchParams<{ id: string; name?: string; file?: string }>();
   const { t } = useTranslation();
   const c = useTheme();
   const box = useRef<ComponentRef<typeof View>>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const isImage = !!name && /\.(png|jpe?g|gif|webp)$/i.test(name);
+  const isImage = /\.(png|jpe?g|gif|webp)$/i.test(file ?? name ?? '');
 
   useEffect(() => {
     let dead = false;
@@ -110,13 +114,26 @@ export default function Doc() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: space.l, borderBottomWidth: 1, borderBottomColor: c.line }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingHorizontal: space.l,
+          borderBottomWidth: 1,
+          borderBottomColor: c.line,
+        }}
+      >
         <BackLink label={t('common.back')} />
         <Text style={{ flex: 1, color: c.ink, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
           {name ?? ''}
         </Text>
         {url ? (
-          <Pressable onPress={() => void WebBrowser.openBrowserAsync(url)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
+          <Pressable
+            onPress={() => void WebBrowser.openBrowserAsync(url)}
+            accessibilityRole="link"
+            style={{ minHeight: 44, justifyContent: 'center' }}
+          >
             <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>{t('cl.doc.download')}</Text>
           </Pressable>
         ) : null}
@@ -127,13 +144,24 @@ export default function Doc() {
           <View style={{ alignItems: 'center', gap: 12, marginTop: 40 }}>
             <Text style={{ color: c.mutedOnBg, textAlign: 'center' }}>{t('cl.doc.error')}</Text>
             {url ? (
-              <Pressable onPress={() => void WebBrowser.openBrowserAsync(url)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
+              <Pressable
+                onPress={() => void WebBrowser.openBrowserAsync(url)}
+                accessibilityRole="link"
+                style={{ minHeight: 44, justifyContent: 'center' }}
+              >
                 <Text style={{ color: c.accent, fontWeight: '700' }}>{t('cl.doc.download')}</Text>
               </Pressable>
             ) : null}
           </View>
         ) : null}
-        {isImage && url ? <Image source={{ uri: url }} accessibilityLabel={name ?? ''} style={{ width: '100%', aspectRatio: 0.75 }} resizeMode="contain" /> : null}
+        {isImage && url ? (
+          <Image
+            source={{ uri: url }}
+            accessibilityLabel={name ?? ''}
+            style={{ width: '100%', aspectRatio: 0.75 }}
+            resizeMode="contain"
+          />
+        ) : null}
         <View ref={box} style={{ width: '100%' }} />
       </ScrollView>
     </SafeAreaView>

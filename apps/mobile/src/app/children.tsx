@@ -27,7 +27,11 @@ export default function Children() {
   // Wait for the first sync to finish so every child is listed before continuing.
   const synced = !!accounts.data?.some((a) => a.lastSyncAt);
   // The worker sets this when the real GestIB login steps have not been captured yet.
-  const notReady = !synced && !!accounts.data?.some((a) => (a.lastErrorCode === 'GESTIB_NOT_READY' || a.lastErrorCode === 'UNKNOWN_PAGE'));
+  const notReady =
+    !synced &&
+    !!accounts.data?.some(
+      (a) => a.lastErrorCode === 'GESTIB_NOT_READY' || a.lastErrorCode === 'UNKNOWN_PAGE',
+    );
   const [waited, setWaited] = useState(0);
   useEffect(() => {
     if (synced || notReady) return;

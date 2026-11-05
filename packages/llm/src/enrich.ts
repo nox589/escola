@@ -7,7 +7,7 @@ import glossary from './glossary.json' with { type: 'json' };
  * SPEC §8.5 enrichment: detect language, translate title/body into a guardian's locale, summary
  * (<=140 chars), classify needs_action + action kind + deadline + confidence. One call per locale.
  */
-export const ENRICH_PROMPT_VERSION = 'enrich-v2';
+export const ENRICH_PROMPT_VERSION = 'enrich-v3';
 
 const LANG_NAMES: Record<string, string> = {
   en: 'English',
@@ -41,6 +41,8 @@ export const enrichmentSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => v ?? null),
+  /** Which child (by audience letter) the item is for: a letter, "both", or null if unclear. */
+  for_child: z.string().max(10).nullable().optional().transform((v) => v ?? null),
 });
 export type Enrichment = z.infer<typeof enrichmentSchema>;
 
@@ -56,6 +58,7 @@ For the item given, return ONLY a JSON object, no prose, with these keys:
 - "deadline": ISO date (YYYY-MM-DD) by which the parent must act, or null. Event dates are NOT deadlines unless the parent must act by then.
 - "confidence": 0 to 1, how sure you are about needs_action and deadline
 - "event_date": ISO date (YYYY-MM-DD) of the main event the item is about (trip, excursion, meeting, festival, day off, celebration), or null if there is none. Use the posting context to pick the year.
+- "for_child": when an <audience> is given, which child the item is for, by letter ("A", "B"...), judged from the classes, ages, stages or groups it mentions (e.g. an adaptation week or "Infantil 3 anys" is for the child in that stage). "both" if it is for the whole school or several of them, null if it cannot be told.
 
 Use this glossary for consistent terms (Catalan → meaning): ${Object.entries(glossary)
   .map(([k, v]) => `${k} = ${v}`)
@@ -97,7 +100,7 @@ export async function enrichItem(
   llm: LlmProvider,
   item: { title: string; body: string; section: string; postedAt?: string },
   targetLang: Locale,
-  opts: { childNames?: string[] } = {},
+  opts: { childNames?: string[]; audience?: { letter: string; classLabel: string | null }[] } = {},
 ): Promise<Enrichment> {
   const t = pseudonymise(item.title, opts.childNames ?? []);
   const b = pseudonymise(item.body.slice(0, 12_000), opts.childNames ?? []);
@@ -107,7 +110,11 @@ export async function enrichItem(
 ${item.postedAt ? `<posted>${item.postedAt.slice(0, 10)}</posted>\n` : ''}
 <title>${t.text}</title>
 <body>${b.text}</body>
-</item>`;
+</item>${
+    opts.audience?.length
+      ? `\n<audience>${opts.audience.map((a) => `child ${a.letter}: ${a.classLabel ?? 'class unknown'}`).join('; ')}</audience>`
+      : ''
+  }`;
 
   let lastErr: unknown;
   for (let attempt = 0; attempt < 2; attempt++) {

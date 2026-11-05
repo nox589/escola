@@ -22,7 +22,10 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: t('cl.today'), tabBarIcon: ({ color }) => <Icon name="home" color={String(color)} /> }}
+        options={{
+          title: t('cl.today'),
+          tabBarIcon: ({ color }) => <Icon name="home" color={String(color)} />,
+        }}
       />
       <Tabs.Screen
         name="messages"
@@ -35,7 +38,10 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="calendar"
-        options={{ title: t('cl.week'), tabBarIcon: ({ color }) => <Icon name="calendar" color={String(color)} /> }}
+        options={{
+          title: t('cl.week'),
+          tabBarIcon: ({ color }) => <Icon name="calendar" color={String(color)} />,
+        }}
       />
     </Tabs>
   );

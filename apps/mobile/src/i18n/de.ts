@@ -31,6 +31,13 @@ export const de: Strings = {
       "editPhone": "Nummer ändern",
       "find": "Nummer suchen",
     },
+    "period": {
+      "current": "Aktuell",
+      "past": "Vergangen",
+    },
+    "nothingPast": "Nichts Älteres hier.",
+    "callSchool": "Schule anrufen",
+    "whichSchool": "Welche Schule anrufen?",
     "chat": {
       "showOriginal": "Original anzeigen ({{lang}})",
       "showTranslation": "Übersetzung anzeigen",

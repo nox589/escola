@@ -23,7 +23,11 @@ export function LinkedText({ children, style }: { children: string; style?: Text
         const url = clean.includes('@') && !clean.startsWith('http') ? `mailto:${clean}` : clean;
         return (
           <Text key={i}>
-            <Text accessibilityRole="link" onPress={() => openLink(url)} style={{ color: c.accent, textDecorationLine: 'underline', fontWeight: '600' }}>
+            <Text
+              accessibilityRole="link"
+              onPress={() => openLink(url)}
+              style={{ color: c.accent, textDecorationLine: 'underline', fontWeight: '600' }}
+            >
               {clean}
             </Text>
             {tail}
@@ -46,7 +50,17 @@ export function LinkList({ links }: { links?: { url: string; label: string }[] }
           onPress={() => openLink(l.url)}
           accessibilityRole="link"
           accessibilityHint={l.url}
-          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: c.line, backgroundColor: pressed ? c.accentSoft : c.card })}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            minHeight: 44,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: c.line,
+            backgroundColor: pressed ? c.accentSoft : c.card,
+          })}
         >
           <Icon name="send" size={16} color={c.accent} />
           <Text style={{ flex: 1, color: c.accent, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>

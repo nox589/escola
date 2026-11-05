@@ -1,11 +1,10 @@
 import { createHash } from 'node:crypto';
-import { and, eq, isNotNull, isNull } from '@escola/db';
+import { and, eq, isNotNull, isNull, or } from '@escola/db';
 import type pg from 'pg';
 import { schema, withFamily } from '@escola/db';
 import type { BlobStore } from '@escola/storage';
 import type { ChildDetails, PortalChild, SchoolDay } from '../adapters/types.js';
 import type { KnownItem } from '../core/diff.js';
-import { attributeChild } from '../enrich/job.js';
 import type { GuardAccount, LockoutStore } from '../core/lockoutGuard.js';
 import type { ItemStore, SavedItem, StoredAttachment, SyncedDiff } from '../core/sync.js';
 
@@ -137,30 +136,28 @@ export class PgItemStore implements ItemStore {
    * Items GestIB lists under more than one child: assign to the one child the text names, else
    * family-wide. Deterministic, so repeated syncs settle on the same answer.
    */
+  /**
+   * Items GestIB lists under more than one child: marked shared once and re-enriched, so the AI
+   * decides who they are for (named child, or by class/stage, else family-wide).
+   */
   async markFamilyWide(accountId: string, refs: { section: string; portalRef: string }[]): Promise<number> {
     return withFamily(this.pool, this.familyId, async (db) => {
-      const kids = await db
-        .select({ id: schema.children.id, name: schema.children.displayName })
-        .from(schema.children)
-        .where(eq(schema.children.portalAccountId, accountId));
       let n = 0;
       for (const r of refs) {
-        const [row] = await db
-          .select({ id: schema.items.id, childId: schema.items.childId, title: schema.items.originalTitle, body: schema.items.originalBodyText })
-          .from(schema.items)
+        const rows = await db
+          .update(schema.items)
+          .set({ shared: true, childId: null, enrichedHash: null })
           .where(
             and(
               eq(schema.items.portalAccountId, accountId),
               eq(schema.items.section, r.section as never),
               eq(schema.items.portalItemRef, r.portalRef),
+              eq(schema.items.shared, false),
             ),
-          );
-        if (!row) continue;
-        const childId = attributeChild(`${row.title}\n${row.body}`, kids);
-        if (row.childId === childId) continue;
-        await db.update(schema.items).set({ childId }).where(eq(schema.items.id, row.id));
-        await db.update(schema.calendarEntries).set({ childId }).where(eq(schema.calendarEntries.itemId, row.id));
-        n++;
+          )
+          .returning({ id: schema.items.id });
+        for (const row of rows) await db.update(schema.calendarEntries).set({ childId: null }).where(eq(schema.calendarEntries.itemId, row.id));
+        n += rows.length;
       }
       return n;
     });
@@ -202,6 +199,12 @@ export class PgItemStore implements ItemStore {
       if (!row) return null;
       const childId = row.id;
       let newAbsences = 0;
+      const [before] = await db.select({ classLabel: schema.children.classLabel }).from(schema.children).where(eq(schema.children.id, childId));
+      if (d.profile?.classLabel && d.profile.classLabel !== before?.classLabel)
+        await db
+          .update(schema.items)
+          .set({ enrichedHash: null })
+          .where(and(eq(schema.items.portalAccountId, accountId), or(eq(schema.items.shared, true), isNull(schema.items.childId))));
       if (d.profile && (d.profile.schoolName || d.profile.classLabel))
         await db
           .update(schema.children)

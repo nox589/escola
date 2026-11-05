@@ -57,6 +57,8 @@ export function requireRole(req: FastifyRequest, ...roles: Principal['role'][]) 
 
 export async function buildApp(deps: AppDeps, opts: { logger?: boolean | object } = {}) {
   const app = Fastify({
+    // Thread keys are base64url sender names; school senders can be 100+ characters.
+    routerOptions: { maxParamLength: 600 },
     logger: opts.logger ?? {
       level: process.env.LOG_LEVEL ?? 'info',
       // Golden rule 4: request bodies and auth headers never reach logs.

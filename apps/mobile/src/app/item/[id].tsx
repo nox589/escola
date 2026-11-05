@@ -46,7 +46,12 @@ export default function Item() {
     enabled.data?.kinds.some((k) => k.kind === 'reply_message' && k.enabled) && it.section === 'message';
 
   // Until sending from clases is switched on, open the same page in GestIB (the parent signs in there).
-  const GESTIB_PAGE: Record<string, string> = { message: 'missatges', circular: 'circulars', authorisation: 'autoritzacions', attendance: 'assistencia' };
+  const GESTIB_PAGE: Record<string, string> = {
+    message: 'missatges',
+    circular: 'circulars',
+    authorisation: 'autoritzacions',
+    attendance: 'assistencia',
+  };
   const gestibPage = !canReply ? GESTIB_PAGE[it.section] : undefined;
 
   const setActionState = async (state: 'done_elsewhere' | 'dismissed') => {
@@ -56,7 +61,18 @@ export default function Item() {
     router.back();
   };
 
-  const openAttachment = (attId: string, filename: string) => router.push({ pathname: '/doc/[id]', params: { id: attId, name: filename } });
+  const openAttachment = (attId: string, filename: string) =>
+    router.push({
+      pathname: '/doc/[id]',
+      params: {
+        id: attId,
+        name:
+          q.data && q.data.attachments.length === 1
+            ? (q.data.translation?.title ?? q.data.original.title)
+            : filename,
+        file: filename,
+      },
+    });
 
   return (
     <Screen>
@@ -116,7 +132,9 @@ export default function Item() {
             </Pressable>
           ) : null}
         </Row>
-        <LinkedText style={{ color: c.ink, fontSize: font.body, lineHeight: 23 }}>{original ? it.original.body : tr!.body}</LinkedText>
+        <LinkedText style={{ color: c.ink, fontSize: font.body, lineHeight: 23 }}>
+          {original ? it.original.body : tr!.body}
+        </LinkedText>
         <LinkList links={it.links} />
       </View>
 
@@ -149,7 +167,9 @@ export default function Item() {
         {gestibPage ? (
           <Button
             title={t('item.openGestib')}
-            onPress={() => void WebBrowser.openBrowserAsync(`https://www3.caib.es/xestibback/families/${gestibPage}`)}
+            onPress={() =>
+              void WebBrowser.openBrowserAsync(`https://www3.caib.es/xestibback/families/${gestibPage}`)
+            }
           />
         ) : null}
         <Button

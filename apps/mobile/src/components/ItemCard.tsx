@@ -42,12 +42,19 @@ export function ItemCard({ item }: { item: FeedItem }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Label text={t(`sections.${item.section}` as 'sections.other')} />
         <Dot colour={item.child?.colour} />
-        <Text style={{ color: c.ink, fontSize: font.tiny, fontWeight: '600' }}>{item.child?.name ?? t('cl.family')}</Text>
+        <Text style={{ color: c.ink, fontSize: font.tiny, fontWeight: '600' }}>
+          {item.child?.name ?? t('cl.family')}
+        </Text>
         {item.postedAt ? (
-          <Text style={{ marginLeft: 'auto', color: c.muted, fontSize: font.tiny }}>{shortDate(item.postedAt, i18n.language)}</Text>
+          <Text style={{ marginLeft: 'auto', color: c.muted, fontSize: font.tiny }}>
+            {shortDate(item.postedAt, i18n.language)}
+          </Text>
         ) : null}
       </View>
-      <Text style={{ color: c.ink, fontSize: font.body, fontWeight: item.read ? '600' : '700', lineHeight: 21 }} numberOfLines={2}>
+      <Text
+        style={{ color: c.ink, fontSize: font.body, fontWeight: item.read ? '600' : '700', lineHeight: 21 }}
+        numberOfLines={2}
+      >
         {item.title}
       </Text>
       {item.summary ? (
@@ -56,9 +63,22 @@ export function ItemCard({ item }: { item: FeedItem }) {
         </Text>
       ) : null}
       {item.attachments ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: c.accentSoft, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            alignSelf: 'flex-start',
+            backgroundColor: c.accentSoft,
+            borderRadius: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+          }}
+        >
           <Icon name="clip" size={14} color={c.accent} />
-          <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>{t('cl.attachments', { count: item.attachments })}</Text>
+          <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>
+            {t('cl.attachments', { count: item.attachments })}
+          </Text>
         </View>
       ) : null}
     </Pressable>
@@ -77,25 +97,46 @@ export function NeedsCard({ item }: { item: FeedItem }) {
       onPress={() => open(item.id)}
       accessibilityRole="button"
       accessibilityHint={actLabel}
-      style={({ pressed }) => ({ backgroundColor: c.card, borderWidth: 1, borderColor: pressed ? c.accent : c.line, borderRadius: 16, padding: space.l, gap: 10 })}
+      style={({ pressed }) => ({
+        backgroundColor: c.card,
+        borderWidth: 1,
+        borderColor: pressed ? c.accent : c.line,
+        borderRadius: 16,
+        padding: space.l,
+        gap: 10,
+      })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Dot colour={item.child?.colour} />
-        <Text style={{ color: c.ink, fontSize: 13, fontWeight: '600' }}>{item.child?.name ?? t('cl.family')}</Text>
+        <Text style={{ color: c.ink, fontSize: 13, fontWeight: '600' }}>
+          {item.child?.name ?? t('cl.family')}
+        </Text>
         <Text style={{ color: c.muted }}>·</Text>
         <Label text={t(`sections.${item.section}` as 'sections.other')} tone="plain" />
       </View>
-      <Text style={{ color: c.ink, fontSize: 17, fontWeight: '700', lineHeight: 22 }}>{item.summary || item.title}</Text>
+      <Text style={{ color: c.ink, fontSize: 17, fontWeight: '700', lineHeight: 22 }}>
+        {item.summary || item.title}
+      </Text>
       {due ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Icon name="clock" size={14} color={c.warn} />
-          <Text style={{ color: (daysLeft(due) ?? 9) <= 2 ? c.danger : c.warn, fontSize: 13, fontWeight: '700' }}>
+          <Text
+            style={{ color: (daysLeft(due) ?? 9) <= 2 ? c.danger : c.warn, fontSize: 13, fontWeight: '700' }}
+          >
             {dueLabel(t, due, shortDate(due, i18n.language))}
           </Text>
         </View>
       ) : null}
       {/* Visual button only: the whole card is the one tap target (no nested buttons on web). */}
-      <View style={{ minHeight: 46, borderRadius: 12, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          minHeight: 46,
+          borderRadius: 12,
+          backgroundColor: c.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>{actLabel}</Text>
       </View>
     </Pressable>
@@ -111,7 +152,14 @@ export function AbsenceCard({ a }: { a: FamilyAbsence }) {
     <Pressable
       onPress={go}
       accessibilityRole="button"
-      style={({ pressed }) => ({ backgroundColor: c.card, borderWidth: 1, borderColor: pressed ? c.accent : c.line, borderRadius: 16, padding: space.l, gap: 10 })}
+      style={({ pressed }) => ({
+        backgroundColor: c.card,
+        borderWidth: 1,
+        borderColor: pressed ? c.accent : c.line,
+        borderRadius: 16,
+        padding: space.l,
+        gap: 10,
+      })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Dot colour={a.child.colour} />
@@ -123,10 +171,22 @@ export function AbsenceCard({ a }: { a: FamilyAbsence }) {
         {t('cl.absenceTitle', { date: dayLabel(a.day, i18n.language) })}
       </Text>
       {a.period || a.subject ? (
-        <Text style={{ color: c.muted, fontSize: 13 }}>{[a.period ? t('cl.child.period', { p: a.period }) : null, a.subject].filter(Boolean).join(' · ')}</Text>
+        <Text style={{ color: c.muted, fontSize: 13 }}>
+          {[a.period ? t('cl.child.period', { p: a.period }) : null, a.subject].filter(Boolean).join(' · ')}
+        </Text>
       ) : null}
-      <View style={{ minHeight: 46, borderRadius: 12, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>{t('cl.act.justify_absence')}</Text>
+      <View
+        style={{
+          minHeight: 46,
+          borderRadius: 12,
+          backgroundColor: c.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>
+          {t('cl.act.justify_absence')}
+        </Text>
       </View>
     </Pressable>
   );

@@ -11,6 +11,7 @@ import { useTheme } from '@/lib/theme';
 interface Doc {
   id: string;
   filename: string;
+  title?: string;
   mime: string;
   size: number;
   item: { id: string; title: string; postedAt: string | null; childId: string | null };
@@ -30,7 +31,8 @@ export default function Documents() {
         `/attachments?${new URLSearchParams({ ...(q ? { q } : {}), ...(child ? { child_id: child } : {}) })}`,
       ),
   });
-  const open = (id: string, filename: string) => router.push({ pathname: '/doc/[id]', params: { id, name: filename } });
+  const open = (id: string, title: string, filename: string) =>
+    router.push({ pathname: '/doc/[id]', params: { id, name: title, file: filename } });
   const name = (id: string | null) => kids.data?.find((k) => k.id === id);
 
   return (
@@ -53,17 +55,21 @@ export default function Documents() {
       ) : null}
       {!docs.data?.length && !docs.isLoading ? <P muted>{t('docs.empty')}</P> : null}
       {(docs.data ?? []).map((d) => (
-        <Card key={d.id} onPress={() => open(d.id, d.filename)} accent={name(d.item.childId)?.colour ?? undefined}>
+        <Card
+          key={d.id}
+          onPress={() => open(d.id, d.title || d.item.title, d.filename)}
+          accent={name(d.item.childId)?.colour ?? undefined}
+        >
           <Row>
             <Text style={{ fontSize: 20 }}>📄</Text>
-            <Text style={{ color: c.ink, fontWeight: '600', flex: 1 }} numberOfLines={1}>
-              {d.filename}
+            <Text style={{ color: c.ink, fontWeight: '600', flex: 1 }} numberOfLines={2}>
+              {d.title || d.item.title}
             </Text>
           </Row>
           <P muted small>
             {[
               name(d.item.childId)?.displayName,
-              d.item.title,
+              d.filename,
               d.item.postedAt ? shortDate(d.item.postedAt, i18n.language) : null,
             ]
               .filter(Boolean)

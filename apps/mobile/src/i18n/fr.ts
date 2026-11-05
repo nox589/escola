@@ -31,6 +31,13 @@ export const fr: Strings = {
       "editPhone": "Changer le numéro",
       "find": "Trouver le numéro",
     },
+    "period": {
+      "current": "En cours",
+      "past": "Passé",
+    },
+    "nothingPast": "Rien de plus ancien ici.",
+    "callSchool": "Appeler l’école",
+    "whichSchool": "Quelle école appeler ?",
     "chat": {
       "showOriginal": "Voir l’original ({{lang}})",
       "showTranslation": "Voir la traduction",

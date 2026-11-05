@@ -73,7 +73,7 @@ d('GestIB adapter vs mock portal', () => {
     expect(r1.children.map((c) => c.ref)).toEqual(['child-a', 'child-b']);
     expect(r1.backfill).toBe(true);
     expect(r1.toNotify).toHaveLength(0);
-    expect(r1.summary).toEqual({ openItems: 3 });
+    expect(r1.summary).toEqual({ openItems: 4 });
     const rows = items.rows.get('acc')!;
     expect(rows.find((x) => x.portalRef === 'circ-2')!.child).toBe('child-b');
     expect(rows.find((x) => x.portalRef === 'circ-1')!.child).toBe('child-a');
@@ -90,7 +90,7 @@ d('GestIB adapter vs mock portal', () => {
       withCredentials: creds(),
     });
     expect(r2.counts.new).toBe(0);
-    expect(r2.counts.unchanged).toBe(3);
+    expect(r2.counts.unchanged).toBe(4);
     expect(r2.backfill).toBe(false);
   });
 

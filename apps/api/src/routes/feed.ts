@@ -168,7 +168,7 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
   });
 
   app.get('/threads/:key', auth, async (req) => {
-    const { key } = z.object({ key: z.string().min(1).max(400) }).parse(req.params);
+    const { key } = z.object({ key: z.string().min(1).max(600) }).parse(req.params);
     const { rows, replies, userId } = await loadMessages(req, senderOf(key));
     if (!rows.length) throw new HttpError(404, 'not_found');
     return {
@@ -286,13 +286,18 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
     const q = z
       .object({ child_id: z.string().uuid().optional(), q: z.string().max(100).optional() })
       .parse(req.query);
+    const locale = await userLocale(deps, me(req).userId);
     return fam(deps, req, async (db) => {
       const conds = [];
       // Family-wide items (no child) show under every child.
       if (q.child_id) conds.push(or(eq(schema.items.childId, q.child_id), isNull(schema.items.childId))!);
       if (q.q)
         conds.push(
-          or(ilike(schema.attachments.filename, `%${q.q}%`), ilike(schema.items.originalTitle, `%${q.q}%`))!,
+          or(
+            ilike(schema.attachments.filename, `%${q.q}%`),
+            ilike(schema.items.originalTitle, `%${q.q}%`),
+            ilike(schema.itemTranslations.title, `%${q.q}%`),
+          )!,
         );
       const rows = await db
         .select({
@@ -303,17 +308,21 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
             postedAt: schema.items.postedAt,
             childId: schema.items.childId,
           },
+          // The document's title in the parent's language: the school item it came with.
+          translatedTitle: schema.itemTranslations.title,
         })
         .from(schema.attachments)
         .innerJoin(schema.items, eq(schema.items.id, schema.attachments.itemId))
+        .leftJoin(schema.itemTranslations, and(eq(schema.itemTranslations.itemId, schema.items.id), eq(schema.itemTranslations.lang, locale)))
         .where(conds.length ? and(...conds) : undefined)
         .orderBy(desc(schema.attachments.createdAt))
         .limit(200);
-      return rows.map(({ a, item }) => ({
+      return rows.map(({ a, item, translatedTitle }) => ({
         id: a.id,
         filename: a.filename,
         mime: a.mime,
         size: a.size,
+        title: translatedTitle ?? item.title,
         item,
       }));
     });

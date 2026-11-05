@@ -143,18 +143,19 @@ async function run(page: Page) {
   }
   await shot(page, '06-today');
 
-  step('Today filtered by child, then the child page');
-  await page.getByRole('button', { name: 'Alumne A' }).first().click();
-  await page.getByText("Open Alumne A's page").waitFor();
-  await shot(page, '06b-today-child');
-  await page.getByText("Open Alumne A's page").click();
+  step('Today: Current/Past, then a child chip opens the child page');
+  await page.getByRole('tab', { name: 'Past' }).click();
+  await shot(page, '06a-today-past');
+  await page.getByRole('tab', { name: 'Current' }).click();
+  await page.getByRole('button', { name: 'Call school' }).first().waitFor();
+  await page.getByRole('button', { name: 'Alumne', exact: true }).first().click();
   await page.getByText('In short').waitFor();
   await shot(page, '06c-child-page');
   if (seeded) {
     await page.getByText(/Teacher (One|Three)/).first().waitFor();
     await page.getByText(/Next class:/).waitFor();
     await page.getByText(/2 absences this year · 1 to justify/).waitFor();
-    await page.getByText('1st evaluation').first().waitFor();
+    await page.getByText('1st evaluation').filter({ visible: true }).first().waitFor();
     await shot(page, '06c2-child-profile');
     await page.getByRole('tab', { name: 'Timetable' }).click();
     await page.getByRole('button', { name: 'Mon' }).click();
@@ -200,6 +201,11 @@ async function run(page: Page) {
   await page.getByRole('button', { name: 'Send to school' }).click();
   await page.getByText(/Delivered/).waitFor({ timeout: 90_000 });
   await shot(page, '10-chat-sent');
+  await page.goto(APP);
+  await page.getByRole('tab', { name: /Messages/ }).click();
+  await page.getByText(/DIRECCIÓ GENERAL/).first().click();
+  await page.getByText(/caib\.es\/beques/).first().waitFor({ timeout: 15_000 });
+  await shot(page, '10b-chat-long-sender');
 
   step('Week tab');
   await page.goto(APP);

@@ -51,7 +51,9 @@ export async function enrichItems(o: {
       .select({ locale: schema.users.locale })
       .from(schema.familyMembers)
       .innerJoin(schema.users, eq(schema.users.id, schema.familyMembers.userId));
-    const kids = await db.select({ id: schema.children.id, name: schema.children.displayName }).from(schema.children);
+    const kids = await db
+      .select({ id: schema.children.id, name: schema.children.displayName, classLabel: schema.children.classLabel })
+      .from(schema.children);
     return {
       items,
       locales: [...new Set(members.map((m) => m.locale as Locale))].sort((a) => (a === 'en' ? -1 : 0)),
@@ -60,6 +62,9 @@ export async function enrichItems(o: {
     };
   });
   const targetLocales: Locale[] = locales.length ? locales : ['en'];
+  // Children as letters + class only (no names) so the AI can tell who a school-wide item is for.
+  const letters = kids.map((k, i) => ({ id: k.id, letter: String.fromCharCode(65 + i), classLabel: k.classLabel }));
+  const audience = letters.length > 1 ? letters.map(({ letter, classLabel }) => ({ letter, classLabel })) : undefined;
 
   const results: EnrichResult[] = [];
   for (const { item, childName } of items) {
@@ -79,7 +84,7 @@ export async function enrichItems(o: {
               postedAt: (item.postedAt ?? item.firstSeenAt)?.toISOString(),
             },
             lang,
-            { childNames },
+            { childNames, audience },
           ),
         });
       }
@@ -96,7 +101,12 @@ export async function enrichItems(o: {
       const needsAction = primary.needs_action || item.section === 'authorisation';
       // Account-wide sections (messages, authorisations) are attributed by name; others keep their child.
       const named = attributeChild(`${item.originalTitle}\n${item.originalBodyText}`, kids);
-      const childId = named ?? (item.section === 'message' ? null : item.childId);
+      const byClass = letters.find((l) => l.letter === primary.for_child)?.id ?? null;
+      // A child named in the text wins; then, for messages and items GestIB shows to several
+      // children, the AI's reading of class/stage ("both"/unclear = family-wide); otherwise the
+      // child GestIB listed it under.
+      const childId =
+        named ?? (item.section === 'message' || item.shared || !item.childId ? byClass : item.childId);
 
       await withFamily(o.pool, o.familyId, async (db) => {
         for (const { lang, e } of per) {

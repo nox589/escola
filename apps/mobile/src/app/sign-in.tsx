@@ -2,7 +2,16 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import { CREAM, TealButton, TealField, TealFooter, TealNote, TealScreen, TealTitle, TealWordmark } from '@/components/Teal';
+import {
+  CREAM,
+  TealButton,
+  TealField,
+  TealFooter,
+  TealNote,
+  TealScreen,
+  TealTitle,
+  TealWordmark,
+} from '@/components/Teal';
 import { api } from '@/lib/api';
 import { signInWithToken } from '@/lib/session';
 
@@ -58,17 +67,40 @@ export default function SignIn() {
         inputMode="email"
         onSubmitEditing={() => /.+@.+\..+/.test(email) && void send()}
       />
-      <TealButton title={t('signin.send')} onPress={() => void send()} loading={busy && !sent} disabled={!/.+@.+\..+/.test(email)} />
+      <TealButton
+        title={t('signin.send')}
+        onPress={() => void send()}
+        loading={busy && !sent}
+        disabled={!/.+@.+\..+/.test(email)}
+      />
       {sent ? (
         <View style={{ gap: 18 }}>
           <TealNote text={t('signin.sent')} tone="ok" />
-          <TealField label={t('signin.paste')} value={link} onChangeText={setLink} autoCapitalize="none" autoCorrect={false} />
-          <TealButton title={t('signin.verify')} onPress={() => void verify()} loading={busy} disabled={link.length < 20} kind="outline" />
+          <TealField
+            label={t('signin.paste')}
+            value={link}
+            onChangeText={setLink}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TealButton
+            title={t('signin.verify')}
+            onPress={() => void verify()}
+            loading={busy}
+            disabled={link.length < 20}
+            kind="outline"
+          />
         </View>
       ) : null}
       <View style={{ flex: 1 }} />
-      <Pressable onPress={() => router.push('/guide')} accessibilityRole="link" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: CREAM, fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' }}>{t('welcome.needPassword')}</Text>
+      <Pressable
+        onPress={() => router.push('/guide')}
+        accessibilityRole="link"
+        style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Text style={{ color: CREAM, fontSize: 15, fontWeight: '600', textDecorationLine: 'underline' }}>
+          {t('welcome.needPassword')}
+        </Text>
       </Pressable>
       <TealFooter text={t('welcome.private')} />
     </TealScreen>

@@ -26,7 +26,9 @@ export default function Guide() {
     <Screen>
       <BackLink label={g.back} />
       <View style={{ gap: 6 }}>
-        <Text accessibilityRole="header" style={{ color: c.ink, fontSize: font.title, fontWeight: '700' }}>{g.title}</Text>
+        <Text accessibilityRole="header" style={{ color: c.ink, fontSize: font.title, fontWeight: '700' }}>
+          {g.title}
+        </Text>
         <Text style={{ color: c.mutedOnBg, fontSize: 15, lineHeight: 21 }}>{g.intro}</Text>
       </View>
 
@@ -34,12 +36,27 @@ export default function Guide() {
         {g.sections.map((s) => {
           const isOpen = open === s.id;
           return (
-            <View key={s.id} style={{ backgroundColor: c.card, borderWidth: 1, borderColor: isOpen ? c.accent : c.line, borderRadius: 16, overflow: 'hidden' }}>
+            <View
+              key={s.id}
+              style={{
+                backgroundColor: c.card,
+                borderWidth: 1,
+                borderColor: isOpen ? c.accent : c.line,
+                borderRadius: 16,
+                overflow: 'hidden',
+              }}
+            >
               <Pressable
                 onPress={() => setOpen(isOpen ? null : s.id)}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: isOpen }}
-                style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: space.l }}
+                style={{
+                  minHeight: 56,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingHorizontal: space.l,
+                }}
               >
                 <Text style={{ flex: 1, color: c.ink, fontSize: 16, fontWeight: '700' }}>{s.title}</Text>
                 <View style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}>
@@ -48,10 +65,21 @@ export default function Guide() {
               </Pressable>
               {isOpen ? (
                 <View style={{ paddingHorizontal: space.l, paddingBottom: space.l, gap: 10 }}>
-                  {s.intro ? <Text style={{ color: c.ink, fontSize: 15, lineHeight: 21 }}>{s.intro}</Text> : null}
+                  {s.intro ? (
+                    <Text style={{ color: c.ink, fontSize: 15, lineHeight: 21 }}>{s.intro}</Text>
+                  ) : null}
                   {s.steps?.map((step, i) => (
                     <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
-                      <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
+                      <View
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          backgroundColor: c.accent,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
                         <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>{i + 1}</Text>
                       </View>
                       <Text style={{ flex: 1, color: c.ink, fontSize: 15, lineHeight: 21 }}>{step}</Text>
@@ -65,7 +93,9 @@ export default function Guide() {
                   ))}
                   {s.id === 'username' ? (
                     <View style={{ gap: 8 }}>
-                      <Text style={{ color: c.mutedOnBg, fontSize: 13, fontWeight: '600' }}>{g.usernameLabel}</Text>
+                      <Text style={{ color: c.mutedOnBg, fontSize: 13, fontWeight: '600' }}>
+                        {g.usernameLabel}
+                      </Text>
                       <TextInput
                         value={id}
                         onChangeText={setId}
@@ -75,12 +105,25 @@ export default function Guide() {
                         autoCapitalize="characters"
                         autoCorrect={false}
                         autoComplete="off"
-                        style={{ minHeight: 48, borderWidth: 1, borderColor: c.line, borderRadius: 12, paddingHorizontal: 14, fontSize: 17, color: c.ink, backgroundColor: c.bg }}
+                        style={{
+                          minHeight: 48,
+                          borderWidth: 1,
+                          borderColor: c.line,
+                          borderRadius: 12,
+                          paddingHorizontal: 14,
+                          fontSize: 17,
+                          color: c.ink,
+                          backgroundColor: c.bg,
+                        }}
                       />
                       {username ? (
-                        <View style={{ backgroundColor: c.accentSoft, borderRadius: 12, padding: 12, gap: 2 }}>
+                        <View
+                          style={{ backgroundColor: c.accentSoft, borderRadius: 12, padding: 12, gap: 2 }}
+                        >
                           <Text style={{ color: c.mutedOnBg, fontSize: 13 }}>{g.usernameResult}</Text>
-                          <Text selectable style={{ color: c.accent, fontSize: 22, fontWeight: '700' }}>{username}</Text>
+                          <Text selectable style={{ color: c.accent, fontSize: 22, fontWeight: '700' }}>
+                            {username}
+                          </Text>
                         </View>
                       ) : null}
                       <Text style={{ color: c.muted, fontSize: 12 }}>{g.usernamePrivate}</Text>
@@ -90,7 +133,14 @@ export default function Guide() {
                     <Pressable
                       onPress={() => void WebBrowser.openBrowserAsync(GESTIB_HOME)}
                       accessibilityRole="link"
-                      style={{ minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: c.accent, alignItems: 'center', justifyContent: 'center' }}
+                      style={{
+                        minHeight: 46,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: c.accent,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
                       <Text style={{ color: c.accent, fontSize: 15, fontWeight: '700' }}>{g.openReset}</Text>
                     </Pressable>
@@ -103,9 +153,17 @@ export default function Guide() {
       </View>
 
       <Pressable
-        onPress={() => (signedIn ? (router.canGoBack() ? router.back() : router.replace('/')) : router.replace('/sign-in'))}
+        onPress={() =>
+          signedIn ? (router.canGoBack() ? router.back() : router.replace('/')) : router.replace('/sign-in')
+        }
         accessibilityRole="button"
-        style={({ pressed }) => ({ minHeight: 52, borderRadius: 14, backgroundColor: pressed ? c.accentPressed : c.accent, alignItems: 'center', justifyContent: 'center' })}
+        style={({ pressed }) => ({
+          minHeight: 52,
+          borderRadius: 14,
+          backgroundColor: pressed ? c.accentPressed : c.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+        })}
       >
         <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{g.haveIt}</Text>
       </Pressable>

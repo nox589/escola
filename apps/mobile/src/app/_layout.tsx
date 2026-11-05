@@ -23,7 +23,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
   link.href = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap';
   document.head.appendChild(link);
   const style = document.createElement('style');
-  style.textContent = "body, div, span, input, textarea, button { font-family: 'Figtree', system-ui, -apple-system, sans-serif !important; } body { background: #FAF7F0; }";
+  style.textContent =
+    "body, div, span, input, textarea, button { font-family: 'Figtree', system-ui, -apple-system, sans-serif !important; } body { background: #FAF7F0; }";
   document.head.appendChild(style);
   document.title = 'clases';
 }

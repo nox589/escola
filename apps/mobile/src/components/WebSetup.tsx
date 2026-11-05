@@ -51,14 +51,28 @@ export function WebSetup() {
   };
 
   return (
-    <View style={{ backgroundColor: c.card, borderWidth: 1, borderColor: c.accent, borderRadius: 16, padding: space.l, gap: 10 }}>
+    <View
+      style={{
+        backgroundColor: c.card,
+        borderWidth: 1,
+        borderColor: c.accent,
+        borderRadius: 16,
+        padding: space.l,
+        gap: 10,
+      }}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Icon name={state === 'needs-install' ? 'home' : 'clock'} size={18} color={c.accent} />
         <Text style={{ color: c.ink, fontSize: 16, fontWeight: '700', flex: 1 }}>
           {state === 'needs-install' ? t('cl.setup.installTitle') : t('cl.setup.notifyTitle')}
         </Text>
         {state === 'needs-install' ? (
-          <Pressable onPress={dismiss} accessibilityRole="button" accessibilityLabel={t('cl.setup.later')} style={{ minHeight: 32, paddingHorizontal: 6, justifyContent: 'center' }}>
+          <Pressable
+            onPress={dismiss}
+            accessibilityRole="button"
+            accessibilityLabel={t('cl.setup.later')}
+            style={{ minHeight: 32, paddingHorizontal: 6, justifyContent: 'center' }}
+          >
             <Text style={{ color: c.muted, fontWeight: '600' }}>{t('cl.setup.later')}</Text>
           </Pressable>
         ) : null}
@@ -77,9 +91,18 @@ export function WebSetup() {
             onPress={() => void turnOn()}
             disabled={busy}
             accessibilityRole="button"
-            style={({ pressed }) => ({ minHeight: 46, borderRadius: 12, backgroundColor: pressed ? c.accentPressed : c.accent, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 })}
+            style={({ pressed }) => ({
+              minHeight: 46,
+              borderRadius: 12,
+              backgroundColor: pressed ? c.accentPressed : c.accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: busy ? 0.6 : 1,
+            })}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>{t('cl.setup.notifyButton')}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>
+              {t('cl.setup.notifyButton')}
+            </Text>
           </Pressable>
         </>
       )}

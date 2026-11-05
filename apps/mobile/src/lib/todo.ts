@@ -31,3 +31,27 @@ export function sortTodos(list: Todo[], now = new Date()): Todo[] {
     return a.band - b.band || a.weight - b.weight || a.d - b.d;
   });
 }
+
+/** School year start (1 September) for a date. */
+function schoolYearStart(now: Date) {
+  const y = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+  return new Date(y, 8, 1);
+}
+
+/**
+ * Current vs past. Past: anything from before this school year; an action whose deadline passed
+ * more than 3 days ago (or with no deadline, posted over 6 weeks ago); an update older than 3 weeks.
+ */
+export function isCurrent(item: FeedItem, now = new Date()): boolean {
+  const posted = item.postedAt ? new Date(item.postedAt) : null;
+  if (posted && posted < schoolYearStart(now)) return false;
+  const ageDays = posted ? (now.getTime() - posted.getTime()) / DAY : 0;
+  if (item.action) {
+    const d = daysLeft(item.action.deadlineAt, now);
+    return d === null ? ageDays <= 42 : d >= -3;
+  }
+  return ageDays <= 21;
+}
+
+/** "Maya Rose Nocker" → "Maya". */
+export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;

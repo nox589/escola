@@ -77,7 +77,7 @@ d('Postgres stores', () => {
     };
     const r1 = await runSync(opts);
     expect(r1.ok).toBe(true);
-    expect(r1.saved).toHaveLength(3);
+    expect(r1.saved).toHaveLength(4);
     await withFamily(pool, familyId, (tx) =>
       tx.update(schema.portalAccounts).set({ lastSyncAt: new Date() }),
     );
@@ -88,13 +88,13 @@ d('Postgres stores', () => {
       attachments: await tx.select().from(schema.attachments),
     }));
     expect(counts.children).toBe(2);
-    expect(counts.items).toBe(3);
+    expect(counts.items).toBe(4);
     expect(counts.attachments).toHaveLength(1);
     expect((await blobs.get(counts.attachments[0]!.s3Key)).toString()).toContain('%PDF');
 
     const r2 = await runSync(opts);
     expect(r2.saved).toHaveLength(0);
-    expect(r2.counts.unchanged).toBe(3);
+    expect(r2.counts.unchanged).toBe(4);
   });
 
   it('lockout store persists failures immediately and serialises concurrent logins', async () => {

@@ -227,6 +227,8 @@ export const items = pgTable(
     firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
     isReadBy: jsonb('is_read_by').notNull().default({}),
     status: itemStatus('status').notNull().default('new'),
+    /** Listed by GestIB under more than one child (see markFamilyWide). */
+    shared: boolean('shared').notNull().default(false),
   },
   (t) => [
     // SPEC §8.3 diff key

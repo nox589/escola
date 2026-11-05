@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Image, Pressable, Text, View, type ViewStyle } from 'react-native';
 import { font, space, useTheme } from '@/lib/theme';
 import { Icon } from './Icon';
@@ -18,12 +19,21 @@ export function Wordmark({ height = 28, tint }: { height?: number; tint?: string
   );
 }
 
-/** Header row: wordmark left, settings right. */
-export function AppHeader() {
+/** Header row: wordmark left; call-the-school and settings right. */
+export function AppHeader({ right }: { right?: ReactNode }) {
   const c = useTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.s }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: space.s,
+      }}
+    >
       <Wordmark />
+      <View style={{ flex: 1 }} />
+      {right}
       <Pressable
         onPress={() => router.push('/settings')}
         accessibilityRole="button"
@@ -64,7 +74,9 @@ export function AskBar({ hint }: { hint: string }) {
 
 export function Dot({ colour, size = 8 }: { colour?: string | null; size?: number }) {
   const c = useTheme();
-  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colour ?? c.line }} />;
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colour ?? c.line }} />
+  );
 }
 
 /** Small uppercase label chip ("MESSAGE", "CIRCULAR"). */
@@ -96,7 +108,10 @@ export function BackLink({ label, style }: { label: string; style?: ViewStyle })
     <Pressable
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       accessibilityRole="link"
-      style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, alignSelf: 'flex-start' }, style]}
+      style={[
+        { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, alignSelf: 'flex-start' },
+        style,
+      ]}
     >
       <Icon name="back" size={18} color={c.accent} />
       <Text style={{ color: c.accent, fontSize: font.body, fontWeight: '600' }}>{label}</Text>

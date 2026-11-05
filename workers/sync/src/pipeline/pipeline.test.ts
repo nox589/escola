@@ -140,9 +140,9 @@ d('pipeline', () => {
       runs: await tx.select().from(schema.syncRuns),
       acc: (await tx.select().from(schema.portalAccounts))[0]!,
     }));
-    expect(data.items).toHaveLength(3);
+    expect(data.items).toHaveLength(4);
     expect(data.items.every((i) => i.enrichedHash?.startsWith(`${i.contentHash}@`))).toBe(true);
-    expect(data.tr).toHaveLength(3);
+    expect(data.tr).toHaveLength(4);
     expect(data.items.every((i) => i.originalTitle && i.originalBodyText)).toBe(true); // original kept
     const trip = data.items.find((i) => i.portalItemRef === 'circ-1')!;
     const action = data.actions.find((a) => a.itemId === trip.id)!;
