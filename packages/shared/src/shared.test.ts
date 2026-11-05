@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gestibPasswordSchema, redact, REDACTED, itemView } from './index.js';
+import { extractLinks } from './schemas.js';
 
 describe('gestibPasswordSchema', () => {
   it.each(['abc123', 'Escola2026', 'a12345678901234567890123456789'])('accepts %s', (p) =>
@@ -42,5 +43,19 @@ describe('itemView', () => {
     expect(
       itemView.safeParse({ ...base, original: { title: 'Sortida', body: 'b', lang: 'ca' } }).success,
     ).toBe(true);
+  });
+});
+
+describe('extractLinks', () => {
+  it('keeps real links, resolves relative ones, skips attachments and anchors', () => {
+    const html =
+      '<p>Info: <a href="https://escola.example/form">Formulari</a> i <a href="#top">amunt</a>' +
+      '<a href="circulars/veureDocumentAdjunt.do?codiDocument=9">doc.pdf</a> <a href="mailto:secretaria@x.es">secretaria</a></p>' +
+      '<p>Web: https://ceip.example/menu.</p>';
+    expect(extractLinks(html)).toEqual([
+      { url: 'https://escola.example/form', label: 'Formulari' },
+      { url: 'mailto:secretaria@x.es', label: 'secretaria' },
+      { url: 'https://ceip.example/menu', label: 'https://ceip.example/menu' },
+    ]);
   });
 });

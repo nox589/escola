@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lt, lte, or, schema, sql } from '@escola/db';
-import { ACTION_STATES, itemsQuery } from '@escola/shared';
+import { ACTION_STATES, extractLinks, itemsQuery } from '@escola/shared';
 import type { AppDeps } from '../context.js';
 import { fam, HttpError, me } from '../app.js';
 import { asApp } from '../services/auth.js';
@@ -182,6 +182,7 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
         title: tr?.title ?? item.originalTitle,
         body: tr?.body ?? null,
         original: { title: item.originalTitle, body: item.originalBodyText, lang: item.originalLang ?? 'ca' },
+        links: extractLinks(item.originalBodyHtml),
       })),
       replies: replies.map((s) => ({
         id: s.id,
@@ -244,6 +245,7 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
           state: a.state,
         })),
         attachments: atts.map((a) => ({ id: a.id, filename: a.filename, mime: a.mime, size: a.size })),
+        links: extractLinks(row.item.originalBodyHtml),
       };
     });
   });

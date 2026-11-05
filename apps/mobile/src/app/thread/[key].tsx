@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, type ScrollViewInstance, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackLink, Dot } from '@/components/Clases';
+import { LinkedText, LinkList } from '@/components/Linked';
 import { Loading } from '@/components/ui';
 import { LANG_NAMES } from '@/i18n';
 import { api, ApiError, type Submission, type ThreadDetail } from '@/lib/api';
@@ -160,7 +161,8 @@ export default function ThreadScreen() {
                     </View>
                   ) : null}
                   <Text style={{ color: c.ink, fontSize: 15, fontWeight: '700' }}>{originals[e.m.id] ? e.m.original.title : e.m.title}</Text>
-                  <Text style={{ color: c.ink, fontSize: 15, lineHeight: 21 }}>{originals[e.m.id] || !e.m.body ? e.m.original.body : e.m.body}</Text>
+                  <LinkedText style={{ color: c.ink, fontSize: 15, lineHeight: 21 }}>{originals[e.m.id] || !e.m.body ? e.m.original.body : e.m.body}</LinkedText>
+                  <LinkList links={e.m.links} />
                   {e.m.body ? (
                     <Pressable onPress={() => setOriginals({ ...originals, [e.m.id]: !originals[e.m.id] })} accessibilityRole="button" style={{ minHeight: 28, justifyContent: 'center' }}>
                       <Text style={{ color: c.accent, fontSize: 13, fontWeight: '700' }}>

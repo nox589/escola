@@ -5,6 +5,7 @@ import { schema, withFamily } from '@escola/db';
 import type { BlobStore } from '@escola/storage';
 import type { ChildDetails, PortalChild, SchoolDay } from '../adapters/types.js';
 import type { KnownItem } from '../core/diff.js';
+import { attributeChild } from '../enrich/job.js';
 import type { GuardAccount, LockoutStore } from '../core/lockoutGuard.js';
 import type { ItemStore, SavedItem, StoredAttachment, SyncedDiff } from '../core/sync.js';
 
@@ -132,6 +133,39 @@ export class PgItemStore implements ItemStore {
     });
   }
 
+  /**
+   * Items GestIB lists under more than one child: assign to the one child the text names, else
+   * family-wide. Deterministic, so repeated syncs settle on the same answer.
+   */
+  async markFamilyWide(accountId: string, refs: { section: string; portalRef: string }[]): Promise<number> {
+    return withFamily(this.pool, this.familyId, async (db) => {
+      const kids = await db
+        .select({ id: schema.children.id, name: schema.children.displayName })
+        .from(schema.children)
+        .where(eq(schema.children.portalAccountId, accountId));
+      let n = 0;
+      for (const r of refs) {
+        const [row] = await db
+          .select({ id: schema.items.id, childId: schema.items.childId, title: schema.items.originalTitle, body: schema.items.originalBodyText })
+          .from(schema.items)
+          .where(
+            and(
+              eq(schema.items.portalAccountId, accountId),
+              eq(schema.items.section, r.section as never),
+              eq(schema.items.portalItemRef, r.portalRef),
+            ),
+          );
+        if (!row) continue;
+        const childId = attributeChild(`${row.title}\n${row.body}`, kids);
+        if (row.childId === childId) continue;
+        await db.update(schema.items).set({ childId }).where(eq(schema.items.id, row.id));
+        await db.update(schema.calendarEntries).set({ childId }).where(eq(schema.calendarEntries.itemId, row.id));
+        n++;
+      }
+      return n;
+    });
+  }
+
   /** School term calendar: replaced wholesale on every sync (kind 'school', no item). */
   async saveSchoolCalendar(_accountId: string, days: SchoolDay[]): Promise<void> {
     const label: Record<SchoolDay['type'], [string, string]> = {
@@ -168,6 +202,14 @@ export class PgItemStore implements ItemStore {
       if (!row) return null;
       const childId = row.id;
       let newAbsences = 0;
+      if (d.profile && (d.profile.schoolName || d.profile.classLabel))
+        await db
+          .update(schema.children)
+          .set({
+            ...(d.profile.schoolName ? { schoolName: d.profile.schoolName } : {}),
+            ...(d.profile.classLabel ? { classLabel: d.profile.classLabel } : {}),
+          })
+          .where(eq(schema.children.id, childId));
       if (d.timetable)
         await db
           .update(schema.children)

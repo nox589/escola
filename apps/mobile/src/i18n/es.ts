@@ -18,6 +18,19 @@ export const es: Strings = {
     "unread_other": "{{count}} sin leer",
     "attachments_one": "1 adjunto",
     "attachments_other": "{{count}} adjuntos",
+    "doc": {
+      "download": "Abrir",
+      "error": "No se ha podido mostrar el documento aquí.",
+    },
+    "schoolInfo": {
+      "title": "Centro",
+      "unknown": "Centro aún sin datos",
+      "call": "Llamar al centro",
+      "phone": "Teléfono del centro",
+      "addPhone": "+ Añadir el teléfono del centro",
+      "editPhone": "Cambiar teléfono",
+      "find": "Buscar el número",
+    },
     "chat": {
       "showOriginal": "Ver original ({{lang}})",
       "showTranslation": "Ver traducción",
@@ -50,6 +63,11 @@ export const es: Strings = {
     "updates": "Novedades",
     "nothingNeeds": "Ahora mismo no hay nada pendiente.",
     "family": "Familia",
+    "overdue": "Vencido desde el {{date}}",
+    "dueToday": "Vence hoy",
+    "dueTomorrow": "Vence mañana",
+    "dueIn_one": "Vence en 1 día",
+    "dueIn_other": "Vence en {{count}} días · {{date}}",
     "due": "Vence el {{date}}",
     "translated": "Traducido del {{lang}}",
     "act": {

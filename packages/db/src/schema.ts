@@ -172,6 +172,7 @@ export const children = pgTable('children', {
   schoolName: text('school_name'),
   classLabel: text('class_label'),
   colour: text('colour'),
+  schoolPhone: text('school_phone'),
   /** Weekly timetable from GestIB: TimetableSession[] (see @escola/shared). */
   timetable: jsonb('timetable').$type<TimetableSession[]>().notNull().default([]),
   detailsSyncedAt: timestamp('details_synced_at', { withTimezone: true }),

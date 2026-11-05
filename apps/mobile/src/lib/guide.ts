@@ -338,7 +338,70 @@ const fr: GuideText = {
   back: 'Retour',
 };
 
-export const GUIDE: Record<string, GuideText> = { en, es, ca, de, fr };
+const it: GuideText = {
+  title: 'Ottieni la password di GestIB',
+  intro: 'clases accede a GestIB Famílies per te, quindi ti servono nome utente e password di GestIB. Tocca un argomento.',
+  sections: [
+    {
+      id: 'account',
+      title: 'Non ho ancora un account',
+      steps: [
+        'Vai in segreteria (secretaria) con il tuo DNI o NIE. Solo la scuola può creare l\u2019account.',
+        'Ti stampano un modulo con i tuoi dati. Controllalo, firmalo e riconsegnalo.',
+        'Ricevi un SMS con il nome utente e un link per impostare la password.',
+      ],
+      bullets: ['Solo passaporto? La guida ufficiale per le famiglie dice che non basta. Chiedi in segreteria.'],
+    },
+    { id: 'username', title: 'Qual è il mio nome utente?', intro: 'È una «e» seguita dal numero del documento, tutto minuscolo. Scrivi il tuo DNI o NIE per vederlo.' },
+    {
+      id: 'reset',
+      title: 'Ho dimenticato la password',
+      steps: [
+        'Apri GestIB e tocca «Reiniciar/Restablir la contrasenya» (reimposta password).',
+        'Inserisci I TUOI dati, non quelli di tuo figlio. Devono coincidere esattamente con quelli della scuola.',
+        'Tocca «Envia la sol·licitud» (invia la richiesta).',
+        'Apri il link blu nell\u2019email. Una password temporanea arriva via SMS.',
+        'Entro 24 ore accedi e cambiala con «Canvi de contrasenya». Se superi le 24 ore, l\u2019account si blocca e devi ricominciare.',
+      ],
+    },
+    {
+      id: 'rules',
+      title: 'Regole della password',
+      bullets: [
+        'Da 6 a 30 caratteri, inizia con una lettera e contiene almeno un numero.',
+        'Niente @ ñ ç ! $ % / * + né accenti.',
+        'Non puoi riusare nessuna delle ultime 4.',
+        'Dura 1 anno, poi va reimpostata. clases ti avvisa quando GestIB ne chiede una nuova.',
+      ],
+    },
+    {
+      id: 'problems',
+      title: 'Qualcosa non funziona',
+      bullets: [
+        '«Les dades no coincideixen» (i dati non coincidono): la segreteria deve aggiornare i tuoi recapiti.',
+        'Il ripristino dice che è andato bene ma non riesci ad accedere: è un difetto noto di GestIB. Chiedi alla segreteria di reinviare la modifica e attendi circa 10 minuti.',
+        'Certificato digitale o Cl@ve: aprono GestIB nel browser, ma clases ha bisogno di nome utente e password.',
+      ],
+    },
+    {
+      id: 'contact',
+      title: 'Chi contattare',
+      bullets: [
+        'Prima la segreteria della scuola: nuovi account, dati che non coincidono, ripristini bloccati.',
+        'Se la scuola non riesce, inoltra al supporto del Govern (suport@caib.es).',
+      ],
+    },
+  ],
+  usernameLabel: 'Il tuo DNI o NIE',
+  usernamePlaceholder: 'es. 1234567K o X1234567M',
+  usernameResult: 'Il tuo nome utente GestIB probabilmente è:',
+  usernamePrivate: 'Calcolato su questo telefono. Il documento non viene inviato da nessuna parte.',
+  openReset: 'Apri il ripristino password di GestIB',
+  haveIt: 'Ho nome utente e password',
+  back: 'Indietro',
+};
+
+export const GUIDE: Record<string, GuideText> = { en, es, ca, de, fr, it };
 export const guideFor = (lang: string) => GUIDE[lang] ?? en;
 
 /** GestIB username from a DNI/NIE: "e" + the ID, lowercase, without spaces or dashes. */

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { Badge, Banner, Button, Card, Divider, H1, Loading, P, Row, Screen } from '@/components/ui';
+import { LinkedText, LinkList } from '@/components/Linked';
 import { LANG_NAMES } from '@/i18n';
 import { api, type ItemDetail } from '@/lib/api';
 import { shortDate, threadKeyOf } from '@/lib/hooks';
@@ -55,10 +56,7 @@ export default function Item() {
     router.back();
   };
 
-  const openAttachment = async (attId: string) => {
-    const { url } = await api<{ url: string }>(`/attachments/${attId}/url`);
-    await WebBrowser.openBrowserAsync(url);
-  };
+  const openAttachment = (attId: string, filename: string) => router.push({ pathname: '/doc/[id]', params: { id: attId, name: filename } });
 
   return (
     <Screen>
@@ -118,7 +116,8 @@ export default function Item() {
             </Pressable>
           ) : null}
         </Row>
-        <P>{original ? it.original.body : tr!.body}</P>
+        <LinkedText style={{ color: c.ink, fontSize: font.body, lineHeight: 23 }}>{original ? it.original.body : tr!.body}</LinkedText>
+        <LinkList links={it.links} />
       </View>
 
       {it.attachments.length ? (
@@ -128,7 +127,7 @@ export default function Item() {
             {t('item.attachments')}
           </P>
           {it.attachments.map((a) => (
-            <Card key={a.id} onPress={() => void openAttachment(a.id)}>
+            <Card key={a.id} onPress={() => openAttachment(a.id, a.filename)}>
               <Row>
                 <Text style={{ fontSize: 18 }}>📄</Text>
                 <Text style={{ color: c.ink, flex: 1 }}>{a.filename}</Text>

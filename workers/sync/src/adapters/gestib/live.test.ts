@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { chromium, type Browser, type BrowserContext, type Route } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createGestibLiveAdapter } from './live.js';
+import { parseCardLines } from './live.js';
 
 /**
  * Synthetic pages shaped like the 2026-11-04 capture (docs/capture). All data is invented.
@@ -171,6 +172,7 @@ d('GestIB live adapter (synthetic capture-shaped pages)', () => {
 
     const det = await a.readChildDetails!(page, kids[1]!);
     expect(det.errors).toEqual([]);
+    expect(det.profile).toEqual({ schoolName: 'CEIP Fake', classLabel: null });
     expect(det.timetable).toEqual([
       { day: 1, start: '09:00', end: '10:30', subject: 'Llengua catalana', subjectShort: 'CAT', room: 'A1', teachers: ['Teacher One'] },
       { day: 1, start: '11:00', end: '12:00', subject: 'Educació física', subjectShort: 'EF', room: null, teachers: ['Teacher Two'] },
@@ -196,5 +198,13 @@ d('GestIB live adapter (synthetic capture-shaped pages)', () => {
     const cap = fakePortal({ password: 'right1', captcha: true });
     const r2 = await a.login(await ctxFor(cap), { username: 'parent', password: 'right1' });
     expect(r2).toMatchObject({ ok: false });
+  });
+});
+
+describe('child card lines', () => {
+  it('finds school and class whatever the order', () => {
+    expect(parseCardLines(['CEIP Exemple', '3r B'])).toEqual({ schoolName: 'CEIP Exemple', classLabel: '3r B' });
+    expect(parseCardLines(['2n de Primària A', 'Escola Graduada'])).toEqual({ schoolName: 'Escola Graduada', classLabel: '2n de Primària A' });
+    expect(parseCardLines(['something else'])).toEqual({ schoolName: null, classLabel: null });
   });
 });

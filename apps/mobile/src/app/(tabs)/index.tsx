@@ -10,6 +10,7 @@ import { Banner, Chip, P } from '@/components/ui';
 import { WebSetup } from '@/components/WebSetup';
 import { api, type FeedItem } from '@/lib/api';
 import { relative, useAbsences, useChildren, useSummary } from '@/lib/hooks';
+import { sortTodos } from '@/lib/todo';
 import { font, space, useTheme } from '@/lib/theme';
 
 /** Today: one translated stream. "Needs you" on top, updates underneath, filtered by child. */
@@ -118,12 +119,9 @@ export default function Today() {
                   </Text>
                 ) : null}
               </View>
-              {openAbsences.map((a) => (
-                <AbsenceCard key={a.id} a={a} />
-              ))}
-              {needs.map((i) => (
-                <NeedsCard key={i.id} item={i} />
-              ))}
+              {sortTodos([...needs.map((item) => ({ kind: 'item' as const, item })), ...openAbsences.map((a) => ({ kind: 'absence' as const, a }))]).map((td) =>
+                td.kind === 'item' ? <NeedsCard key={td.item.id} item={td.item} /> : <AbsenceCard key={td.a.id} a={td.a} />,
+              )}
               {!needs.length && !openAbsences.length && !feed.isLoading ? <P muted small>{t('cl.nothingNeeds')}</P> : null}
             </View>
 

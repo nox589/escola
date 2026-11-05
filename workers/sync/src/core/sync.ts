@@ -19,6 +19,8 @@ export interface ItemStore {
   ): Promise<SavedItem[]>;
   /** Removes children the portal no longer lists, keeping their items as family-wide. */
   pruneChildren?(accountId: string, keepRefs: string[]): Promise<number>;
+  /** Items the portal shows for more than one child are family-wide (child cleared, re-attributed). */
+  markFamilyWide?(accountId: string, refs: { section: string; portalRef: string }[]): Promise<number>;
   /** Replaces the school-calendar entries (holidays etc.) for this account. */
   saveSchoolCalendar?(accountId: string, days: SchoolDay[]): Promise<void>;
   /** Stores timetable, absences and agenda for a child; null parts keep the stored data. */
@@ -146,6 +148,8 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
     const known = await o.items.known(o.accountId);
     // Account-wide sections (e.g. messages) are read once, not once per child.
     const accountDone = new Set<string>();
+    // For per-child sections: which children each item was listed under.
+    const seenUnder = new Map<string, Set<string>>();
 
     for (const child of report.children) {
       await o.adapter.switchChild(page, child);
@@ -156,6 +160,11 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
         accountDone.add(reader.slug);
         try {
           const fresh = await reader.read(page, child);
+          if (reader.scope === 'child')
+            for (const f of fresh) {
+              const k = `${f.section}\u0000${f.portalRef}`;
+              seenUnder.set(k, (seenUnder.get(k) ?? new Set()).add(child.ref));
+            }
           const diffs = diffItems(fresh, known);
           for (const d of diffs) {
             report.counts[d.kind]++;
@@ -201,6 +210,16 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
           log.error({ accountId: o.accountId, section: 'childDetails' }, 'section failed');
         }
       }
+    }
+
+    if (report.children.length > 1 && o.items.markFamilyWide) {
+      const shared = [...seenUnder.entries()]
+        .filter(([, kids]) => kids.size > 1)
+        .map(([k]) => {
+          const [section, portalRef] = k.split('\u0000') as [string, string];
+          return { section, portalRef };
+        });
+      if (shared.length) await o.items.markFamilyWide(o.accountId, shared);
     }
 
     if (o.adapter.readSchoolCalendar && o.items.saveSchoolCalendar) {

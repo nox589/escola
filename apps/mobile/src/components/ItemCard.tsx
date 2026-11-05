@@ -3,9 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import type { FamilyAbsence, FeedItem } from '@/lib/api';
 import { dayLabel, shortDate } from '@/lib/hooks';
+import { daysLeft } from '@/lib/todo';
 import { font, space, useTheme } from '@/lib/theme';
 import { Dot, Label } from './Clases';
 import { Icon } from './Icon';
+
+/** "Overdue", "Due today", "Due tomorrow", "Due in 3 days", else "Due Fri 14 Nov". */
+function dueLabel(t: (k: string, o?: Record<string, unknown>) => string, iso: string, date: string) {
+  const d = daysLeft(iso);
+  if (d === null) return '';
+  if (d < 0) return t('cl.overdue', { date });
+  if (d === 0) return t('cl.dueToday');
+  if (d === 1) return t('cl.dueTomorrow');
+  if (d <= 6) return t('cl.dueIn', { count: d, date });
+  return t('cl.due', { date });
+}
 
 const open = (id: string) => router.push({ pathname: '/item/[id]', params: { id } });
 
@@ -77,7 +89,9 @@ export function NeedsCard({ item }: { item: FeedItem }) {
       {due ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Icon name="clock" size={14} color={c.warn} />
-          <Text style={{ color: c.warn, fontSize: 13, fontWeight: '700' }}>{t('cl.due', { date: shortDate(due, i18n.language) })}</Text>
+          <Text style={{ color: (daysLeft(due) ?? 9) <= 2 ? c.danger : c.warn, fontSize: 13, fontWeight: '700' }}>
+            {dueLabel(t, due, shortDate(due, i18n.language))}
+          </Text>
         </View>
       ) : null}
       {/* Visual button only: the whole card is the one tap target (no nested buttons on web). */}

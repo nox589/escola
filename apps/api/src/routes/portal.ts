@@ -229,6 +229,7 @@ export async function portalRoutes(app: FastifyInstance, deps: AppDeps) {
           schoolName: schema.children.schoolName,
           classLabel: schema.children.classLabel,
           colour: schema.children.colour,
+          schoolPhone: schema.children.schoolPhone,
         })
         .from(schema.children)
         .orderBy(asc(schema.children.displayName)),
@@ -262,6 +263,8 @@ export async function portalRoutes(app: FastifyInstance, deps: AppDeps) {
         id: c.id,
         displayName: c.displayName,
         classLabel: c.classLabel,
+        schoolName: c.schoolName,
+        schoolPhone: c.schoolPhone,
         colour: c.colour,
         detailsSyncedAt: c.detailsSyncedAt?.toISOString() ?? null,
         timetable: c.timetable,
@@ -324,12 +327,19 @@ export async function portalRoutes(app: FastifyInstance, deps: AppDeps) {
           .string()
           .regex(/^#[0-9a-fA-F]{6}$/)
           .optional(),
+        // School phone for the Call button; digits, spaces and a leading + only.
+        schoolPhone: z
+          .string()
+          .trim()
+          .regex(/^\+?[0-9 ]{6,20}$/)
+          .nullable()
+          .optional(),
       })
       .parse(req.body);
     return fam(deps, req, async (db) => {
       const [c] = await db.update(schema.children).set(body).where(eq(schema.children.id, id)).returning();
       if (!c) throw new HttpError(404, 'not_found');
-      return { id: c.id, displayName: c.displayName, colour: c.colour };
+      return { id: c.id, displayName: c.displayName, colour: c.colour, schoolPhone: c.schoolPhone };
     });
   });
 }

@@ -151,3 +151,33 @@ export function teachersFromTimetable(sessions: TimetableSession[]): TeacherView
     .map(([name, e]) => ({ name, subjects: [...e.subjects], hoursPerWeek: Math.round((e.minutes / 60) * 10) / 10 }))
     .sort((a, b) => b.hoursPerWeek - a.hoursPerWeek || a.name.localeCompare(b.name));
 }
+
+/** Links found in a portal message's HTML (school website, forms…), attachments excluded. */
+export function extractLinks(html: string, base = 'https://www3.caib.es/xestibback/families/'): { url: string; label: string }[] {
+  const out: { url: string; label: string }[] = [];
+  const seen = new Set<string>();
+  const re = /<a\b[^>]*?href\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    const raw = m[2]!.replace(/&amp;/g, '&').trim();
+    if (!raw || raw.startsWith('#') || /^javascript:/i.test(raw) || /veureDocumentAdjunt/i.test(raw)) continue;
+    let url: string;
+    try {
+      url = new URL(raw, base).toString();
+    } catch {
+      continue;
+    }
+    if (!/^(https?:|mailto:|tel:)/i.test(url) || seen.has(url)) continue;
+    seen.add(url);
+    const label = m[3]!.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    out.push({ url, label: label && label !== raw ? label : url.replace(/^mailto:|^tel:/i, '') });
+  }
+  // Bare addresses written as text.
+  for (const u of html.replace(/<[^>]+>/g, ' ').match(/https?:\/\/[^\s<>"')]+/g) ?? []) {
+    const url = u.replace(/[.,;:]+$/, '');
+    if (!seen.has(url)) {
+      seen.add(url);
+      out.push({ url, label: url });
+    }
+  }
+  return out.slice(0, 20);
+}

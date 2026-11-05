@@ -6,8 +6,8 @@ import type { Section } from '@escola/shared';
  * >3 items in one sync → one batched push, quiet hours 21:00–07:00 local.
  */
 
-type L = 'en' | 'es' | 'ca' | 'de' | 'fr';
-const pick = (locale: string): L => (['en', 'es', 'ca', 'de', 'fr'].includes(locale) ? (locale as L) : 'en');
+type L = 'en' | 'es' | 'ca' | 'de' | 'fr' | 'it';
+const pick = (locale: string): L => (['en', 'es', 'ca', 'de', 'fr', 'it'].includes(locale) ? (locale as L) : 'en');
 
 const KIND: Record<
   L,
@@ -88,15 +88,31 @@ const KIND: Record<
     deadline: 'Rappel',
     other: 'Nouveauté',
   },
+  it: {
+    message: 'Messaggio',
+    circular: 'Circolare',
+    authorisation: 'Serve un’autorizzazione',
+    notification: 'Avviso',
+    attendance: 'Presenze',
+    grade: 'Nuovo voto',
+    partial_grade: 'Nuovo voto',
+    assessment: 'Valutazione',
+    activity: 'Attività',
+    calendar_event: 'Calendario',
+    consent: 'Serve un’autorizzazione',
+    deadline: 'Promemoria',
+    other: 'Novità',
+  },
 };
 
-const BY: Record<L, string> = { en: 'by', es: 'antes del', ca: 'abans del', de: 'bis', fr: 'avant le' };
+const BY: Record<L, string> = { en: 'by', es: 'antes del', ca: 'abans del', de: 'bis', fr: 'avant le', it: 'entro il' };
 const NEW_FOR: Record<L, (n: number, c: string) => string> = {
   en: (n, c) => `${n} new updates for ${c}`,
   es: (n, c) => `${n} novedades para ${c}`,
   ca: (n, c) => `${n} novetats per a ${c}`,
   de: (n, c) => `${n} neue Mitteilungen für ${c}`,
   fr: (n, c) => `${n} nouveautés pour ${c}`,
+  it: (n, c) => `${n} novità per ${c}`,
 };
 const SENSITIVE_BODY: Record<L, (c: string) => string> = {
   en: (c) => `Open the app to see it for ${c}.`,
@@ -104,6 +120,7 @@ const SENSITIVE_BODY: Record<L, (c: string) => string> = {
   ca: (c) => `Obre l'app per veure-ho (${c}).`,
   de: (c) => `Öffne die App, um es zu sehen (${c}).`,
   fr: (c) => `Ouvrez l'app pour le voir (${c}).`,
+  it: (c) => `Apri l'app per vederlo (${c}).`,
 };
 
 /** Sections whose content must not appear on the lock screen. */

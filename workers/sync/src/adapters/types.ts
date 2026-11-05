@@ -123,6 +123,8 @@ export interface AgendaEvent {
 
 /** Each part is null when that page failed, so stored data is kept rather than wiped. */
 export interface ChildDetails {
+  /** School and class as shown on the selected child's card (null when not recognised). */
+  profile?: { schoolName: string | null; classLabel: string | null } | null;
   timetable: TimetableSession[] | null;
   absences: PortalAbsence[] | null;
   agenda: AgendaEvent[] | null;

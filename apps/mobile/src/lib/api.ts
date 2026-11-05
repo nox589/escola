@@ -120,6 +120,7 @@ export interface Child {
   schoolName: string | null;
   classLabel: string | null;
   colour: string | null;
+  schoolPhone?: string | null;
 }
 export interface Action {
   id: string;
@@ -154,6 +155,7 @@ export interface ItemDetail {
   postedAt: string | null;
   actions: Action[];
   attachments: { id: string; filename: string; mime: string; size: number }[];
+  links?: { url: string; label: string }[];
 }
 export interface PortalAccount {
   id: string;
@@ -256,6 +258,7 @@ export interface ThreadDetail {
     title: string;
     body: string | null;
     original: { title: string; body: string; lang: string };
+    links?: { url: string; label: string }[];
   }[];
   replies: { id: string; itemId: string | null; state: string; text: string; sentText: string | null; createdAt: string }[];
 }

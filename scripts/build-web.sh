@@ -7,6 +7,8 @@ cd apps/mobile
 npx expo export --platform web --output-dir dist
 # Installable web app: manifest, Home Screen icons, service worker (push notifications).
 cp web/* dist/
+# In-app PDF viewer (pdf.js), served from our own origin.
+mkdir -p dist/pdfjs && cp node_modules/pdfjs-dist/build/pdf.min.js node_modules/pdfjs-dist/build/pdf.worker.min.js dist/pdfjs/
 node -e '
 const fs = require("fs");
 const p = "dist/index.html";

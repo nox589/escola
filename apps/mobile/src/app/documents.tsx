@@ -1,5 +1,5 @@
+import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text } from 'react-native';
@@ -30,10 +30,7 @@ export default function Documents() {
         `/attachments?${new URLSearchParams({ ...(q ? { q } : {}), ...(child ? { child_id: child } : {}) })}`,
       ),
   });
-  const open = async (id: string) => {
-    const { url } = await api<{ url: string }>(`/attachments/${id}/url`);
-    await WebBrowser.openBrowserAsync(url);
-  };
+  const open = (id: string, filename: string) => router.push({ pathname: '/doc/[id]', params: { id, name: filename } });
   const name = (id: string | null) => kids.data?.find((k) => k.id === id);
 
   return (
@@ -56,7 +53,7 @@ export default function Documents() {
       ) : null}
       {!docs.data?.length && !docs.isLoading ? <P muted>{t('docs.empty')}</P> : null}
       {(docs.data ?? []).map((d) => (
-        <Card key={d.id} onPress={() => void open(d.id)} accent={name(d.item.childId)?.colour ?? undefined}>
+        <Card key={d.id} onPress={() => open(d.id, d.filename)} accent={name(d.item.childId)?.colour ?? undefined}>
           <Row>
             <Text style={{ fontSize: 20 }}>📄</Text>
             <Text style={{ color: c.ink, fontWeight: '600', flex: 1 }} numberOfLines={1}>

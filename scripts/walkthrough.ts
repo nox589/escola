@@ -38,6 +38,7 @@ async function main() {
     process.env.IPHONE ? { ...devices['iPhone 13'], locale: 'en-GB' } : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'en-GB' },
   );
   page.on('pageerror', (e) => process.stdout.write(`  page error: ${e.message}\n`));
+  page.on('console', (m) => m.type() === 'warning' && process.stdout.write(`  console: ${m.text().slice(0, 200)}\n`));
   try {
     await run(page);
   } catch (e) {
@@ -132,7 +133,7 @@ async function run(page: Page) {
   await page.getByRole('button', { name: 'Not now' }).click();
 
   step('Today');
-  await page.getByText('Needs you').first().waitFor({ timeout: 30_000 });
+  await page.getByText('Needs you', { exact: true }).first().waitFor({ timeout: 30_000 });
   if (process.env.SEED_DB_URL) await page.getByText(/needs a reason/).first().waitFor();
   if (process.env.IPHONE) {
     await page.getByText('Add clases to your Home Screen').waitFor();
@@ -169,10 +170,14 @@ async function run(page: Page) {
   await page.getByRole('tab', { name: 'Documents' }).click();
   await page.waitForTimeout(800);
   await shot(page, '06d-child-documents');
+  await page.getByRole('link', { name: /\.pdf/ }).first().click();
+  await page.locator('canvas').first().waitFor({ timeout: 30_000 });
+  await shot(page, '06g-document');
+  await page.getByRole('link', { name: 'Back' }).first().click();
   await page.getByRole('tab', { name: 'Grades' }).click();
   await page.getByText('No grades posted yet').waitFor();
   await page.goto(APP);
-  await page.getByText('Needs you').first().waitFor({ timeout: 30_000 });
+  await page.getByText('Needs you', { exact: true }).first().waitFor({ timeout: 30_000 });
 
   step('item detail + original toggle');
   await page.getByText('[en] Sortida al Parc Natural').first().click();

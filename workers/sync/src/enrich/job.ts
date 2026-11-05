@@ -96,8 +96,7 @@ export async function enrichItems(o: {
       const needsAction = primary.needs_action || item.section === 'authorisation';
       // Account-wide sections (messages, authorisations) are attributed by name; others keep their child.
       const named = attributeChild(`${item.originalTitle}\n${item.originalBodyText}`, kids);
-      const childId =
-        named ?? (item.section === 'message' || item.section === 'authorisation' ? null : item.childId);
+      const childId = named ?? (item.section === 'message' ? null : item.childId);
 
       await withFamily(o.pool, o.familyId, async (db) => {
         for (const { lang, e } of per) {

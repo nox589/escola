@@ -4,7 +4,7 @@ import { schema, withFamily } from '@escola/db';
 import type { LlmProvider } from '@escola/llm';
 import type { TimetableSession } from '@escola/shared';
 
-const LANG_NAMES: Record<string, string> = { en: 'English', es: 'Spanish', ca: 'Catalan', de: 'German', fr: 'French' };
+const LANG_NAMES: Record<string, string> = { en: 'English', es: 'Spanish', ca: 'Catalan', de: 'German', fr: 'French', it: 'Italian' };
 
 /** Parses the model's reply: a JSON array of strings with exactly `n` entries, else null. */
 export function parseLabelReply(reply: string, n: number): string[] | null {

@@ -16,6 +16,19 @@ export const en = {
     "unread_other": "{{count}} unread",
     "attachments_one": "1 attachment",
     "attachments_other": "{{count}} attachments",
+    "doc": {
+      "download": "Open",
+      "error": "Couldn’t show this document here.",
+    },
+    "schoolInfo": {
+      "title": "School",
+      "unknown": "School not shown yet",
+      "call": "Call school",
+      "phone": "School phone",
+      "addPhone": "+ Add the school’s phone number",
+      "editPhone": "Change phone number",
+      "find": "Find the number",
+    },
     "chat": {
       "showOriginal": "Show original ({{lang}})",
       "showTranslation": "Show translation",
@@ -48,6 +61,11 @@ export const en = {
     "updates": "Updates",
     "nothingNeeds": "Nothing needs you right now.",
     "family": "Family",
+    "overdue": "Overdue since {{date}}",
+    "dueToday": "Due today",
+    "dueTomorrow": "Due tomorrow",
+    "dueIn_one": "Due in 1 day",
+    "dueIn_other": "Due in {{count}} days · {{date}}",
     "due": "Due {{date}}",
     "translated": "Translated from {{lang}}",
     "act": {

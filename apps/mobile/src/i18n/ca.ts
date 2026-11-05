@@ -18,6 +18,19 @@ export const ca: Strings = {
     "unread_other": "{{count}} sense llegir",
     "attachments_one": "1 adjunt",
     "attachments_other": "{{count}} adjunts",
+    "doc": {
+      "download": "Obrir",
+      "error": "No s’ha pogut mostrar el document aquí.",
+    },
+    "schoolInfo": {
+      "title": "Centre",
+      "unknown": "Centre encara sense dades",
+      "call": "Telefonar al centre",
+      "phone": "Telèfon del centre",
+      "addPhone": "+ Afegir el telèfon del centre",
+      "editPhone": "Canviar telèfon",
+      "find": "Cercar el número",
+    },
     "chat": {
       "showOriginal": "Veure original ({{lang}})",
       "showTranslation": "Veure traducció",
@@ -50,6 +63,11 @@ export const ca: Strings = {
     "updates": "Novetats",
     "nothingNeeds": "Ara mateix no hi ha res pendent.",
     "family": "Família",
+    "overdue": "Vençut des del {{date}}",
+    "dueToday": "Venç avui",
+    "dueTomorrow": "Venç demà",
+    "dueIn_one": "Venç en 1 dia",
+    "dueIn_other": "Venç en {{count}} dies · {{date}}",
     "due": "Venç el {{date}}",
     "translated": "Traduït del {{lang}}",
     "act": {

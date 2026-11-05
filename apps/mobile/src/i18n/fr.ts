@@ -18,6 +18,19 @@ export const fr: Strings = {
     "unread_other": "{{count}} non lus",
     "attachments_one": "1 pièce jointe",
     "attachments_other": "{{count}} pièces jointes",
+    "doc": {
+      "download": "Ouvrir",
+      "error": "Impossible d’afficher ce document ici.",
+    },
+    "schoolInfo": {
+      "title": "École",
+      "unknown": "École pas encore affichée",
+      "call": "Appeler l’école",
+      "phone": "Téléphone de l’école",
+      "addPhone": "+ Ajouter le numéro de l’école",
+      "editPhone": "Changer le numéro",
+      "find": "Trouver le numéro",
+    },
     "chat": {
       "showOriginal": "Voir l’original ({{lang}})",
       "showTranslation": "Voir la traduction",
@@ -50,6 +63,11 @@ export const fr: Strings = {
     "updates": "Nouveautés",
     "nothingNeeds": "Rien à faire pour le moment.",
     "family": "Famille",
+    "overdue": "En retard depuis le {{date}}",
+    "dueToday": "À rendre aujourd’hui",
+    "dueTomorrow": "À rendre demain",
+    "dueIn_one": "À rendre dans 1 jour",
+    "dueIn_other": "À rendre dans {{count}} jours · {{date}}",
     "due": "Avant le {{date}}",
     "translated": "Traduit du {{lang}}",
     "act": {

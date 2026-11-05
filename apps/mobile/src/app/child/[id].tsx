@@ -1,9 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { BackLink, Dot } from '@/components/Clases';
 import { Icon } from '@/components/Icon';
 import { ItemCard } from '@/components/ItemCard';
@@ -65,10 +64,7 @@ export default function ChildPage() {
     queryFn: () => api<Doc[]>(`/attachments?${new URLSearchParams({ child_id: id!, ...(q ? { q } : {}) })}`),
     enabled: tab === 'documents',
   });
-  const open = async (docId: string) => {
-    const { url } = await api<{ url: string }>(`/attachments/${docId}/url`);
-    await WebBrowser.openBrowserAsync(url);
-  };
+  const open = (docId: string, filename: string) => router.push({ pathname: '/doc/[id]', params: { id: docId, name: filename } });
 
   const p = profile.data;
   const all = items.data?.items ?? [];
@@ -113,11 +109,11 @@ export default function ChildPage() {
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text accessibilityRole="header" style={{ color: c.ink, fontSize: font.title, fontWeight: '700' }}>{kid?.displayName ?? ''}</Text>
-          {kid?.classLabel || kid?.schoolName ? (
-            <Text style={{ color: c.mutedOnBg, fontSize: font.small }}>{[kid?.classLabel, kid?.schoolName].filter(Boolean).join(' · ')}</Text>
-          ) : null}
+          {kid?.classLabel ? <Text style={{ color: c.mutedOnBg, fontSize: font.small }}>{kid.classLabel}</Text> : null}
         </View>
       </View>
+
+      <SchoolCard name={kid?.schoolName ?? null} classLabel={kid?.classLabel ?? null} phone={kid?.schoolPhone ?? null} childId={id!} />
 
       <View style={{ backgroundColor: c.accentSoft, borderRadius: 16, padding: 14, gap: 8 }}>
         <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: c.accent }}>{t('cl.child.inShort')}</Text>
@@ -235,7 +231,7 @@ export default function ChildPage() {
           {(docs.data ?? []).map((d) => (
             <Pressable
               key={d.id}
-              onPress={() => void open(d.id)}
+              onPress={() => open(d.id, d.filename)}
               accessibilityRole="link"
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 14, padding: 12 }}
             >
@@ -357,6 +353,86 @@ function Attendance({ absences, loaded }: { absences: Absence[]; loaded: boolean
           ) : null}
         </View>
       ))}
+    </View>
+  );
+}
+
+/** School, class and a Call button. GestIB doesn't show the school's phone, so the parent adds it once. */
+function SchoolCard({ name, classLabel, phone, childId }: { name: string | null; classLabel: string | null; phone: string | null; childId: string }) {
+  const { t } = useTranslation();
+  const c = useTheme();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(phone ?? '');
+  const [error, setError] = useState(false);
+  if (!name && !classLabel && !phone && !editing) {
+    return (
+      <Pressable onPress={() => setEditing(true)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+        <Text style={{ color: c.accent, fontWeight: '700' }}>{t('cl.schoolInfo.addPhone')}</Text>
+      </Pressable>
+    );
+  }
+  const save = async () => {
+    setError(false);
+    try {
+      await api(`/children/${childId}`, { method: 'PATCH', body: { schoolPhone: value.trim() || null } });
+      await qc.invalidateQueries({ queryKey: ['children'] });
+      setEditing(false);
+    } catch {
+      setError(true);
+    }
+  };
+  return (
+    <View style={{ backgroundColor: c.card, borderWidth: 1, borderColor: c.line, borderRadius: 16, padding: 14, gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: c.muted }}>{t('cl.schoolInfo.title')}</Text>
+          <Text style={{ color: c.ink, fontSize: 16, fontWeight: '700' }}>{name ?? t('cl.schoolInfo.unknown')}</Text>
+          {classLabel ? <Text style={{ color: c.mutedOnBg, fontSize: 14 }}>{classLabel}</Text> : null}
+        </View>
+        {phone && !editing ? (
+          <Pressable
+            onPress={() => void Linking.openURL(`tel:${phone.replace(/\s/g, '')}`)}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('cl.schoolInfo.call')} ${phone}`}
+            style={({ pressed }) => ({ minHeight: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: pressed ? c.accentPressed : c.accent, alignItems: 'center', justifyContent: 'center' })}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t('cl.schoolInfo.call')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {editing ? (
+        <View style={{ gap: 8 }}>
+          <TextInput
+            value={value}
+            onChangeText={setValue}
+            placeholder="971 000 000"
+            placeholderTextColor={c.muted}
+            keyboardType="phone-pad"
+            inputMode="tel"
+            accessibilityLabel={t('cl.schoolInfo.phone')}
+            style={{ minHeight: 46, borderWidth: 1, borderColor: error ? c.danger : c.line, borderRadius: 12, paddingHorizontal: 14, fontSize: 16, color: c.ink, backgroundColor: c.bg }}
+          />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable onPress={() => void save()} accessibilityRole="button" style={{ flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>{t('common.save')}</Text>
+            </Pressable>
+            {name ? (
+              <Pressable
+                onPress={() => void Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(`${name} telèfon`)}`)}
+                accessibilityRole="link"
+                style={{ flex: 1, minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: c.accent, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: c.accent, fontWeight: '700' }}>{t('cl.schoolInfo.find')}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : (
+        <Pressable onPress={() => setEditing(true)} accessibilityRole="button" style={{ minHeight: 32, justifyContent: 'center' }}>
+          <Text style={{ color: c.accent, fontWeight: '700', fontSize: 13 }}>{phone ? t('cl.schoolInfo.editPhone') : t('cl.schoolInfo.addPhone')}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

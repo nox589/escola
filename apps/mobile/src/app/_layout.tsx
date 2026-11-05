@@ -77,6 +77,7 @@ export default function RootLayout() {
           <Stack.Screen name="item/[id]" options={{ title: '' }} />
           <Stack.Screen name="child/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="thread/[key]" options={{ headerShown: false }} />
+          <Stack.Screen name="doc/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="assistant" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="documents" options={{ headerShown: false }} />

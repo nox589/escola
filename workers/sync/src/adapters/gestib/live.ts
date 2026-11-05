@@ -218,7 +218,8 @@ export function createGestibLiveAdapter(): PortalAdapter {
     return {
       section,
       slug: cfg.page,
-      scope: section === 'authorisation' ? 'account' : 'child',
+      // Read per child: GestIB lists what belongs to the selected child; items shown for every child are family-wide.
+      scope: 'child',
       async read(page) {
         await goto(page, cfg.page);
         const items: NormalisedItem[] = [];
@@ -485,6 +486,18 @@ export function createGestibLiveAdapter(): PortalAdapter {
     return out;
   }
 
+  /** The selected child's card: name first, then school and class (03-home.json). */
+  async function readProfile(page: Page) {
+    await goto(page, 'home');
+    const leaves = await page.locator(G.children.selectedCard).first().evaluate((el) =>
+      Array.from(el.querySelectorAll('*'))
+        .filter((e) => !e.children.length)
+        .map((e) => ((e as HTMLElement).innerText ?? '').trim())
+        .filter(Boolean),
+    );
+    return parseCardLines(leaves.slice(1));
+  }
+
   /** Reads each part independently so one failing page never wipes the others. */
   async function readChildDetails(page: Page): Promise<ChildDetails> {
     const errors: ChildDetails['errors'] = [];
@@ -498,6 +511,7 @@ export function createGestibLiveAdapter(): PortalAdapter {
       }
     };
     return {
+      profile: await attempt('home', () => readProfile(page)),
       timetable: await attempt(G.timetable.page, () => readTimetable(page)),
       absences: await attempt(G.attendance.page, () => readAbsences(page)),
       agenda: await attempt(G.agenda.page, () => readAgenda(page)),
@@ -531,4 +545,15 @@ export class SessionExpiredError extends Error {
     super('Portal session expired mid-run');
     this.name = 'SessionExpiredError';
   }
+}
+
+const SCHOOL_RE = /\b(CEIP|CEI|CEIPIESO|EI|EIEL|IES|CC|CP|CPI|CEPA|CIFP|EOI|Col·legi|Col\.legi|Colegio|Escola|Escuela|Institut|Instituto)\b/i;
+const CLASS_RE = /(\d+\s*[ºªrnt]|\b\d+\s*(?:de|d')|\bcurs\b|\bcurso\b|Educaci|ESO|Batx|Bach|Prim|Infantil|\bP[345]\b|\bgrup\b|\bgrupo\b)/i;
+
+/** School and class from the card lines after the name; regex first, then position. */
+export function parseCardLines(lines: string[]): { schoolName: string | null; classLabel: string | null } {
+  const rest = lines.map((l) => l.replace(/\s+/g, ' ').trim()).filter((l) => l && l.length < 120);
+  const schoolName = rest.find((l) => SCHOOL_RE.test(l)) ?? null;
+  const classLabel = rest.find((l) => l !== schoolName && CLASS_RE.test(l)) ?? null;
+  return { schoolName, classLabel };
 }
