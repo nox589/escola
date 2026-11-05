@@ -220,7 +220,8 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
           const [section, portalRef] = k.split('\u0000') as [string, string];
           return { section, portalRef };
         });
-      if (shared.length) await o.items.markFamilyWide(o.accountId, shared);
+      const n = shared.length ? await o.items.markFamilyWide(o.accountId, shared) : 0;
+      log.info({ accountId: o.accountId, shared: shared.length, newlyShared: n }, 'family-wide items');
     }
     if (report.children.length > 1 && o.items.attributeToChild) {
       const single = [...seenUnder.entries()]
@@ -229,7 +230,9 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
           const [section, portalRef] = k.split('\u0000') as [string, string];
           return { section, portalRef, childRef: [...kids][0]! };
         });
-      if (single.length) await o.items.attributeToChild(o.accountId, single);
+      const n = single.length ? await o.items.attributeToChild(o.accountId, single) : 0;
+      const perChild = report.children.map((c) => single.filter((x) => x.childRef === c.ref).length);
+      log.info({ accountId: o.accountId, single: single.length, perChild, reattributed: n }, 'items attributed to one child');
     }
 
     if (o.adapter.readSchoolCalendar && o.items.saveSchoolCalendar) {
