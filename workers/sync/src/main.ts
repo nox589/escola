@@ -57,7 +57,10 @@ const adapter = useMock
       selectors: mockSelectors(env.GESTIB_MOCK_URL ?? 'http://localhost:4010'),
       enabledWriters: (env.ENABLED_WRITERS || 'reply_message').split(',').filter(Boolean) as never[],
     })
-  : createGestibLiveAdapter(); // read-only; no writers
+  : createGestibLiveAdapter({
+      // Real GestIB writes stay off unless listed (e.g. ENABLED_WRITERS=new_message).
+      enabledWriters: (env.ENABLED_WRITERS || '').split(',').filter(Boolean) as never[],
+    });
 
 const providers = createProviders(llmConfigFromEnv());
 const opts = { removeOnComplete: 1000, removeOnFail: 5000 };

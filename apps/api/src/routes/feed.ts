@@ -8,6 +8,14 @@ import { asApp } from '../services/auth.js';
 
 const idParam = z.object({ id: z.string().uuid() });
 
+const SCHOOL_DAY_LABELS: Record<string, Record<string, string>> = {
+  Vacances: { en: 'School holiday', es: 'Vacaciones', ca: 'Vacances', de: 'Schulferien', fr: 'Vacances scolaires', it: 'Vacanze scolastiche' },
+  Festiu: { en: 'Public holiday', es: 'Festivo', ca: 'Festiu', de: 'Feiertag', fr: 'Jour férié', it: 'Festivo' },
+  'Festiu local': { en: 'Local holiday', es: 'Festivo local', ca: 'Festiu local', de: 'Lokaler Feiertag', fr: 'Jour férié local', it: 'Festivo locale' },
+  'Dia no lectiu': { en: 'No school (non-teaching day)', es: 'Día no lectivo', ca: 'Dia no lectiu', de: 'Unterrichtsfreier Tag', fr: 'Jour sans classe', it: 'Giorno senza lezioni' },
+  'Dia de lliure disposició': { en: 'No school (school free day)', es: 'Día de libre disposición', ca: 'Dia de lliure disposició', de: 'Schulfreier Tag', fr: 'Jour libre de l’école', it: 'Giorno libero della scuola' },
+};
+
 async function userLocale(deps: AppDeps, userId: string) {
   const [u] = await asApp(deps.pool, (db) =>
     db.select({ locale: schema.users.locale }).from(schema.users).where(eq(schema.users.id, userId)),
@@ -348,14 +356,20 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
         child_id: z.string().uuid().optional(),
       })
       .parse(req.query);
+    const locale = await userLocale(deps, me(req).userId);
     return fam(deps, req, async (db) => {
       const rows = await db
         .select({
           e: schema.calendarEntries,
           child: { name: schema.children.displayName, colour: schema.children.colour },
+          trTitle: schema.itemTranslations.title,
         })
         .from(schema.calendarEntries)
         .leftJoin(schema.children, eq(schema.children.id, schema.calendarEntries.childId))
+        .leftJoin(
+          schema.itemTranslations,
+          and(eq(schema.itemTranslations.itemId, schema.calendarEntries.itemId), eq(schema.itemTranslations.lang, locale)),
+        )
         .where(
           and(
             gte(schema.calendarEntries.startsAt, new Date(q.from)),
@@ -366,12 +380,17 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
           ),
         )
         .orderBy(asc(schema.calendarEntries.startsAt));
-      return rows.map(({ e, child }) => ({
+      return rows.map(({ e, child, trTitle }) => ({
         id: e.id,
         itemId: e.itemId,
         childId: e.childId,
         child,
-        title: e.titleTranslated ?? e.titleOriginal,
+        // School days: fixed labels per language; items: the item's title in the user's language.
+        title:
+          (e.kind === 'school' ? SCHOOL_DAY_LABELS[e.titleOriginal]?.[locale] : null) ??
+          (e.itemId ? trTitle : null) ??
+          e.titleTranslated ??
+          e.titleOriginal,
         titleOriginal: e.titleOriginal,
         startsAt: e.startsAt.toISOString(),
         endsAt: e.endsAt?.toISOString() ?? null,

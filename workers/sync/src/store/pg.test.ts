@@ -15,6 +15,7 @@ import { createGestibAdapter } from '../adapters/gestib/adapter.js';
 import { mockSelectors } from '../adapters/gestib/selectors.mock.js';
 import { guardedLogin } from '../core/lockoutGuard.js';
 import { runSync } from '../core/sync.js';
+import type { PortalContact } from '../adapters/types.js';
 import { PgItemStore, PgLockoutStore } from './pg.js';
 
 const base = process.env.TEST_DATABASE_URL;
@@ -140,5 +141,39 @@ d('Postgres stores', () => {
     // Another family sees nothing.
     const other = await withFamily(pool, crypto.randomUUID(), (tx) => tx.select().from(schema.absences));
     expect(other).toEqual([]);
+  });
+
+  it('saves teachers per child, fills the class, drops stale ones; other families see none', async () => {
+    const blobs = new LocalBlobStore(await mkdtemp(join(tmpdir(), 'b-')), 'http://api', 's');
+    const store = new PgItemStore(pool, familyId, blobs);
+    const contact = (ref: string, childGiven: string, note: string, extra: Partial<PortalContact> = {}): PortalContact => ({
+      ref, name: `T ${ref}`, role: 'teacher', female: false, childGiven, childFull: '', senderNote: note, accepts: true, ...extra,
+    });
+    // Children 'Alumne A' and 'Alumne B' exist from the sync test.
+    expect(
+      await store.saveContacts(accountId, [
+        contact('T1', 'ALUMNE A', 'Alumne A - 3r B', { role: 'tutor', female: true }),
+        contact('T2', 'ALUMNE B', 'Alumne B - 1r EP A'),
+        contact('T3', 'NOBODY', ''),
+      ]),
+    ).toBe(3);
+    const rows = await withFamily(pool, familyId, (tx) =>
+      tx
+        .select({ ref: schema.contacts.portalRef, child: schema.children.displayName, role: schema.contacts.role })
+        .from(schema.contacts)
+        .leftJoin(schema.children, eq(schema.children.id, schema.contacts.childId)),
+    );
+    expect(rows.sort((a, b) => a.ref.localeCompare(b.ref))).toEqual([
+      { ref: 'T1', child: 'Alumne A', role: 'tutor' },
+      { ref: 'T2', child: 'Alumne B', role: 'teacher' },
+      { ref: 'T3', child: null, role: 'teacher' },
+    ]);
+    const classes = await withFamily(pool, familyId, (tx) =>
+      tx.select({ n: schema.children.displayName, c: schema.children.classLabel }).from(schema.children),
+    );
+    expect(classes.find((k) => k.n === 'Alumne B')!.c).toBe('1r EP A');
+    expect(await store.saveContacts(accountId, [contact('T2', 'ALUMNE B', 'Alumne B - 1r EP A')])).toBe(1);
+    expect(await withFamily(pool, familyId, (tx) => tx.select().from(schema.contacts))).toHaveLength(1);
+    expect(await withFamily(pool, crypto.randomUUID(), (tx) => tx.select().from(schema.contacts))).toEqual([]);
   });
 });

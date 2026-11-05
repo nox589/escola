@@ -1,0 +1,21 @@
+{
+  "captured": "2026-11-05 15:10, Claude in the founder's logged-in session: read the page and GestIB's own scripts only (missatges.js, factoryMissatges.js). Nothing sent, nothing marked read. Structure only.",
+  "page": "/xestibback/families/missatges ('Nuevo mensaje' tab)",
+  "recipients": {
+    "source": "server-rendered globals window.llistaTutors and window.llistaProfessors (inline script, llistaTutors.push({...}))",
+    "fields": "codi (36), nom (teacher display name), username, sexe ('D' = female), esTutor (boolean), acceptaMsg ('S'|'N'; 'N' cannot be selected), nomPersCarrec (child's given names), nomCompletPersCarrec ('SURNAMES, GIVEN'), codiPersCarrec (36), observRemitent (string shaped '<child> - <class>'), dataPrimeraConnexio",
+    "counts_seen": "2 tutors (one per child), 10 teachers"
+  },
+  "send": {
+    "method": "POST form-urlencoded (AngularJS $httpParamSerializer: arrays as repeated keys)",
+    "url": "/xestibback/families/missatges/enviamentMissatgeUsuaris.do (factory URL_ENVIA_MISSATGE, resolved with urlPrefix 'missatges')",
+    "body": "dests=<codi>... & obRmt=<recipient.observRemitent>... & obDst=<'Tutora de'|'Tutor de'|'Professora de'|'Professor de' + ': ' + nomPersCarrec>... & missatge=<text, max 3500 chars> & permetResposta=S & assumpte=<subject, optional>",
+    "response": "XML; a non-empty <error> means failure (GestIB shows 'errorEnviaMissatge'), else success ('msgEnviat')"
+  },
+  "verify": {
+    "sent_summary": "POST /xestibback/families/missatges/resumMissatgesEnviatsXUsuari.json body llistaEtiquetesFiltre (empty) -> llistatCodisMissatge",
+    "sent_list": "POST /xestibback/families/missatges/llistaMissatgesEnviatsXCodi.json body codisMissatges=<codes>"
+  },
+  "labels": { "ca": ["Tutor de", "Tutora de", "Professor de", "Professora de"], "es": ["Tutor de", "Tutora de", "Profesor de", "Profesora de"] },
+  "child_card_note": "Home's alumno-seleccionado-card holds only the child's name (one h4); no school or class. The class comes from observRemitent above."
+}

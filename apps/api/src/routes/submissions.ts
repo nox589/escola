@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { and, desc, eq, isNull, schema, type Db } from '@escola/db';
+import { and, desc, eq, inArray, isNull, schema, type Db } from '@escola/db';
 import { draftForSchool } from '@escola/llm';
 import {
   computePreviewHash,
@@ -38,6 +38,12 @@ const inputSchemas: Record<SubmissionKind, z.ZodTypeAny> = {
   upload_document: z.object({ text: z.string().max(2000).default('') }),
   answer_survey: z.object({ answers: z.record(z.string(), z.string()) }),
   request_meeting: z.object({ text: z.string().min(1).max(2000) }),
+  // GestIB caps a message at 3500 characters; leave room for the translation to grow.
+  new_message: z.object({
+    text: z.string().min(1).max(3000),
+    subject: z.string().max(150).default(''),
+    contact_ids: z.array(z.string().uuid()).min(1).max(10),
+  }),
 };
 
 async function loadContext(db: Db, childId: string, itemId?: string | null) {
@@ -54,10 +60,18 @@ async function buildDraft(
   input: Record<string, unknown>,
   userLang: string,
   item?: typeof schema.items.$inferSelect,
+  contacts?: (typeof schema.contacts.$inferSelect)[],
 ): Promise<{ original: string; back: string; fields: Record<string, string> }> {
   const targetLang = item?.originalLang === 'es' ? 'es' : 'ca';
   const text = String(input.text ?? '');
   const fields: Record<string, string> = {};
+  if (kind === 'new_message') {
+    // Recipients are part of what the parent confirms (and of the preview hash).
+    fields.to = (contacts ?? []).map((c) => c.portalRef).join(',');
+    fields.toNames = (contacts ?? []).map((c) => c.name).join(', ');
+    const subject = String(input.subject ?? '').trim();
+    if (subject) fields.subject = (await draftForSchool(deps.llm, { text: subject, userLang, targetLang: 'ca' })).original;
+  }
   if (kind === 'authorisation') fields.decision = String(input.decision);
   if (kind === 'justify_absence')
     Object.assign(fields, { from: String(input.from), to: String(input.to), reason: String(input.reason) });
@@ -99,14 +113,23 @@ export async function submissionRoutes(app: FastifyInstance, deps: AppDeps) {
     const body = createSubmissionRequest.parse(req.body);
     // Replies can always be drafted (translation + back-translation preview, to copy into GestIB);
     // sending is refused at confirm until the writer is switched on. Other kinds need the writer.
-    if (!enabled().has(body.kind) && body.kind !== 'reply_message') throw new HttpError(409, 'kind_not_enabled');
+    if (!enabled().has(body.kind) && body.kind !== 'reply_message' && body.kind !== 'new_message')
+      throw new HttpError(409, 'kind_not_enabled');
     const input = inputSchemas[body.kind].parse(body.user_input) as Record<string, unknown>;
     const p = me(req);
     const [user] = await asApp(deps.pool, (db) =>
       db.select().from(schema.users).where(eq(schema.users.id, p.userId)),
     );
     const ctx = await fam(deps, req, (db) => loadContext(db, body.child_id, body.item_id));
-    const draft = await buildDraft(deps, body.kind, input, user!.locale, ctx.item);
+    const contacts =
+      body.kind === 'new_message'
+        ? await fam(deps, req, (db) =>
+            db.select().from(schema.contacts).where(inArray(schema.contacts.id, input.contact_ids as string[])),
+          )
+        : undefined;
+    if (contacts && (contacts.length !== (input.contact_ids as string[]).length || contacts.some((c) => !c.accepts)))
+      throw new HttpError(400, 'bad_recipients');
+    const draft = await buildDraft(deps, body.kind, input, user!.locale, ctx.item, contacts);
 
     const sub = await fam(deps, req, async (db) => {
       const [s] = await db
@@ -186,7 +209,15 @@ export async function submissionRoutes(app: FastifyInstance, deps: AppDeps) {
     const kind = existing.kind as SubmissionKind;
     const input = inputSchemas[kind].parse(user_input) as Record<string, unknown>;
     const ctx = await fam(deps, req, (db) => loadContext(db, existing.childId, existing.itemId));
-    const draft = await buildDraft(deps, kind, input, existing.userLang, ctx.item);
+    const contacts =
+      kind === 'new_message'
+        ? await fam(deps, req, (db) =>
+            db.select().from(schema.contacts).where(inArray(schema.contacts.id, input.contact_ids as string[])),
+          )
+        : undefined;
+    if (contacts && (contacts.length !== (input.contact_ids as string[]).length || contacts.some((c) => !c.accepts)))
+      throw new HttpError(400, 'bad_recipients');
+    const draft = await buildDraft(deps, kind, input, existing.userLang, ctx.item, contacts);
     const s = await fam(deps, req, async (db) => {
       // Any edit invalidates every confirmation (SPEC §9.4).
       await db

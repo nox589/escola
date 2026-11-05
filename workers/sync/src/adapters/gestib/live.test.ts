@@ -17,6 +17,7 @@ function fakePortal(opts: { password: string; captcha?: boolean }) {
   // case that once listed Ana twice and dropped Biel.
   let selected = 'B';
   const calls: string[] = [];
+  const sent: string[] = [];
   const kids = { A: 'Ana Maria Test', B: 'Biel Test', P: 'TEST, ANA' } as Record<string, string>;
   const born = { A: '01/02/2019', B: '03/04/2021', P: '01/02/2019' } as Record<string, string>;
   const shell = (body: string) =>
@@ -113,12 +114,26 @@ function fakePortal(opts: { password: string; captcha?: boolean }) {
       }
       if (slug === 'activitats')
         return html(shell(`<form id="formHorari_X" method="post" action="../calendari/agenda/X" target="i"><input name="idioma" value="es"></form>`));
-      if (slug === 'home' || slug === 'missatges') return html(shell(''));
+      if (slug === 'missatges')
+        return html(shell(`<script>
+          var llistaTutors = [{codi:"T1", nom:"Tutor One", sexe:"D", esTutor:true, acceptaMsg:"S", nomPersCarrec:"ANA MARIA", nomCompletPersCarrec:"TEST, ANA MARIA", observRemitent:"Ana Maria Test - 2n EI B"}];
+          var llistaProfessors = [{codi:"P1", nom:"Teacher Two", sexe:"H", esTutor:false, acceptaMsg:"S", nomPersCarrec:"BIEL", nomCompletPersCarrec:"TEST, BIEL", observRemitent:"Biel Test - 1r EP A"},
+                                  {codi:"P2", nom:"No Messages", sexe:"H", esTutor:false, acceptaMsg:"N", nomPersCarrec:"BIEL", nomCompletPersCarrec:"TEST, BIEL", observRemitent:"Biel Test - 1r EP A"}];
+        </script>`));
+      if (slug === 'missatges/enviamentMissatgeUsuaris.do') {
+        sent.push(req.postData() ?? '');
+        return route.fulfill({ contentType: 'text/xml', body: '<?xml version="1.0"?><resultat><error></error></resultat>' });
+      }
+      if (slug === 'missatges/resumMissatgesEnviatsXUsuari.json')
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ llistatCodisMissatge: [501] }) });
+      if (slug === 'missatges/llistaMissatgesEnviatsXCodi.json')
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify([{ codi: 501, texte: sent.length ? 'Bon dia,<br>demà en Biel no vindrà.' : '' }]) });
+      if (slug === 'home') return html(shell(''));
       return route.fulfill({ status: 404, body: '' });
     }
     return route.abort();
   }
-  return { handle, calls };
+  return { handle, calls, sent };
 }
 
 const CHROME = process.env.CHROME_PATH ?? ['/usr/bin/google-chrome', '/usr/bin/chromium'].find(existsSync);
@@ -194,6 +209,38 @@ d('GestIB live adapter (synthetic capture-shaped pages)', () => {
 
     // Read-only: no mark-as-read, delete, reply or submit endpoints were ever called.
     expect(p.calls.filter((x) => /Llegit|Vista|Esborra|envia|marca/i.test(x))).toEqual([]);
+  });
+
+  it('reads teachers per child and sends a confirmed new message exactly once', async () => {
+    const p = fakePortal({ password: 'secret1' });
+    const a = createGestibLiveAdapter({ enabledWriters: ['new_message'] });
+    const res = await a.login(await ctxFor(p), { username: 'parent', password: 'secret1' });
+    if (!res.ok) throw new Error('login');
+    const contacts = await a.readContacts!(res.page);
+    expect(contacts.map((c) => [c.ref, c.role, c.female, c.childGiven, c.accepts])).toEqual([
+      ['T1', 'tutor', true, 'ANA MARIA', true],
+      ['P1', 'teacher', false, 'BIEL', true],
+      ['P2', 'teacher', false, 'BIEL', false],
+    ]);
+    const w = a.writers().new_message!;
+    const sub = { submissionId: 's', kind: 'new_message' as const, childRef: 'IDB', text: 'Bon dia,\ndemà en Biel no vindrà.', fields: { to: 'P1', subject: 'Absència' }, previewHash: 'a'.repeat(64) };
+    await expect(w.prepare(res.page, { ...sub, fields: { to: 'P2' } })).rejects.toThrow(/not available/);
+    await expect(w.prepare(res.page, { ...sub, previewHash: 'x' })).rejects.toThrow();
+    const prepared = await w.prepare(res.page, sub);
+    expect(prepared.fieldEcho.text).toBe(sub.text);
+    expect(p.sent).toEqual([]); // nothing goes out at prepare
+    expect((await w.submit(res.page, prepared)).status).toBe('submitted');
+    const body = new URLSearchParams(p.sent[0]);
+    expect(body.getAll('dests')).toEqual(['P1']);
+    expect(body.getAll('obDst')).toEqual(['Professor de: BIEL']);
+    expect(body.getAll('obRmt')).toEqual(['Biel Test - 1r EP A']);
+    expect(body.get('missatge')).toBe(sub.text);
+    expect(body.get('assumpte')).toBe('Absència');
+    expect(body.get('permetResposta')).toBe('S');
+    expect(await w.verify(res.page, sub)).toMatchObject({ verified: true, confirmationRef: '501' });
+    expect(p.sent).toHaveLength(1);
+    // Read-only by default: no writers without the flag.
+    expect(createGestibLiveAdapter().writers()).toEqual({});
   });
 
   it('stops without retrying on a wrong password or a CAPTCHA', async () => {

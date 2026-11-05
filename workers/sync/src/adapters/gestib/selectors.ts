@@ -141,6 +141,17 @@ export const gestibLive = {
     listUrl: '/xestibback/families/missatges/llistaMissatgesXCodi.json', // 04-messages.json
     listParam: 'codisMissatges', // 04-messages.json
   },
+  /** Writing to a teacher or tutor ('Nuevo mensaje'). All from 13-new-message.json. */
+  newMessage: {
+    /** Inline globals on the missatges page with the people the parent may write to. */
+    recipientGlobals: ['llistaTutors', 'llistaProfessors'] as const, // 13-new-message.json
+    sendUrl: '/xestibback/families/missatges/enviamentMissatgeUsuaris.do', // 13-new-message.json
+    sentSummaryUrl: '/xestibback/families/missatges/resumMissatgesEnviatsXUsuari.json', // 13-new-message.json
+    sentListUrl: '/xestibback/families/missatges/llistaMissatgesEnviatsXCodi.json', // 13-new-message.json
+    maxChars: 3500, // 13-new-message.json (contaCaracters)
+    /** obDst label GestIB builds per recipient (Catalan UI strings). */
+    roleLabel: { tutor: ['Tutor de', 'Tutora de'], teacher: ['Professor de', 'Professora de'] }, // 13-new-message.json
+  },
   circulars: {
     page: 'circulars', // 06-circulars.json
     item: 'div.box[id^="circular_"]', // 06-circulars.json

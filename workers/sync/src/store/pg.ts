@@ -3,7 +3,7 @@ import { and, eq, isNotNull, isNull, ne, or } from '@escola/db';
 import type pg from 'pg';
 import { schema, withFamily } from '@escola/db';
 import type { BlobStore } from '@escola/storage';
-import type { ChildDetails, PortalChild, SchoolDay } from '../adapters/types.js';
+import type { ChildDetails, PortalChild, PortalContact, SchoolDay } from '../adapters/types.js';
 import type { KnownItem } from '../core/diff.js';
 import type { GuardAccount, LockoutStore } from '../core/lockoutGuard.js';
 import type { ItemStore, SavedItem, StoredAttachment, SyncedDiff } from '../core/sync.js';
@@ -148,6 +148,66 @@ export class PgItemStore implements ItemStore {
    * Items GestIB lists under more than one child: marked shared once and re-enriched, so the AI
    * decides who they are for (named child, or by class/stage, else family-wide).
    */
+  /**
+   * Teachers and tutors for messaging, matched to children by the child's given names. The class
+   * GestIB shows next to each child ('<child> - <class>') fills children.class_label.
+   */
+  async saveContacts(accountId: string, list: PortalContact[]): Promise<number> {
+    const norm = (t: string) =>
+      t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z]+/).filter(Boolean);
+    return withFamily(this.pool, this.familyId, async (db) => {
+      const kids = await db
+        .select({ id: schema.children.id, name: schema.children.displayName, classLabel: schema.children.classLabel })
+        .from(schema.children)
+        .where(eq(schema.children.portalAccountId, accountId));
+      const childFor = (given: string) => {
+        const g = norm(given);
+        if (!g.length) return null;
+        const hits = kids.filter((k) => g.every((w) => norm(k.name).includes(w)));
+        return hits.length === 1 ? hits[0]! : null;
+      };
+      const keep: string[] = [];
+      for (const c of list) {
+        const kid = childFor(c.childGiven);
+        const row = {
+          familyId: this.familyId,
+          portalAccountId: accountId,
+          childId: kid?.id ?? null,
+          portalRef: c.ref,
+          name: c.name,
+          role: c.role,
+          female: c.female,
+          childLabel: c.childGiven,
+          senderNote: c.senderNote,
+          accepts: c.accepts,
+          updatedAt: new Date(),
+        };
+        const [saved] = await db
+          .insert(schema.contacts)
+          .values(row)
+          .onConflictDoUpdate({ target: [schema.contacts.portalAccountId, schema.contacts.portalRef, schema.contacts.childLabel], set: row })
+          .returning({ id: schema.contacts.id });
+        keep.push(saved!.id);
+        const cls = c.senderNote.includes(' - ') ? c.senderNote.split(' - ').pop()!.trim() : '';
+        if (kid && cls && cls.length < 60 && kid.classLabel !== cls) {
+          await db.update(schema.children).set({ classLabel: cls }).where(eq(schema.children.id, kid.id));
+          kid.classLabel = cls;
+          // Class is what attribution of school-wide items relies on: redo those.
+          await db
+            .update(schema.items)
+            .set({ enrichedHash: null })
+            .where(and(eq(schema.items.portalAccountId, accountId), or(eq(schema.items.shared, true), isNull(schema.items.childId))));
+        }
+      }
+      const all = await db
+        .select({ id: schema.contacts.id })
+        .from(schema.contacts)
+        .where(eq(schema.contacts.portalAccountId, accountId));
+      for (const r of all.filter((r) => !keep.includes(r.id))) await db.delete(schema.contacts).where(eq(schema.contacts.id, r.id));
+      return keep.length;
+    });
+  }
+
   /**
    * Items a per-child read listed under exactly one child belong to that child. Repairs items left
    * family-wide by an earlier bad listing (sets shared=false and the child; re-enriches on change).

@@ -1,6 +1,6 @@
 import { log } from '../../core/logger.js';
 import type { BrowserContext, Page } from 'playwright';
-import { ParserDriftError } from '../errors.js';
+import { ParserDriftError, WriteNotConfirmedError } from '../errors.js';
 import type {
   AgendaEvent,
   ChildDetails,
@@ -10,9 +10,12 @@ import type {
   PortalAdapter,
   PortalChild,
   SchoolDay,
+  PortalContact,
+  PreparedForm,
   SectionReader,
+  SectionWriter,
 } from '../types.js';
-import type { TimetableSession } from '@escola/shared';
+import type { SubmissionKind, TimetableSession } from '@escola/shared';
 import { gestibLive as G } from './selectors.js';
 
 /**
@@ -56,7 +59,8 @@ const htmlToText = (html: string) =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-export function createGestibLiveAdapter(): PortalAdapter {
+export function createGestibLiveAdapter(opts: { enabledWriters?: SubmissionKind[] } = {}): PortalAdapter {
+  const enabledWriters = new Set(opts.enabledWriters ?? []);
   async function isLoggedIn(page: Page) {
     return !onIdp(page) && (await exists(page, G.login.loggedInMarker));
   }
@@ -549,6 +553,128 @@ export function createGestibLiveAdapter(): PortalAdapter {
     return parsed;
   }
 
+  /** Teachers and tutors from the missatges page globals (13-new-message.json). Read-only. */
+  async function readContacts(page: Page): Promise<PortalContact[]> {
+    const N = G.newMessage;
+    await goto(page, G.messages.page);
+    const raw = await page.evaluate((names) => {
+      const w = window as unknown as Record<string, unknown>;
+      return names.map((n) => (Array.isArray(w[n]) ? (w[n] as Record<string, unknown>[]) : null));
+    }, [...N.recipientGlobals]);
+    if (raw.every((x) => x === null)) throw new ParserDriftError('recipient lists missing', G.messages.page);
+    const out: PortalContact[] = [];
+    raw.forEach((list, i) => {
+      for (const r of list ?? []) {
+        const ref = String(r.codi ?? '');
+        if (!ref) continue;
+        out.push({
+          ref,
+          name: String(r.nom ?? '').trim(),
+          role: r.esTutor === true || i === 0 ? 'tutor' : 'teacher',
+          female: r.sexe === 'D',
+          childGiven: String(r.nomPersCarrec ?? '').trim(),
+          childFull: String(r.nomCompletPersCarrec ?? '').trim(),
+          senderNote: String(r.observRemitent ?? ''),
+          accepts: r.acceptaMsg !== 'N',
+        });
+      }
+    });
+    return out;
+  }
+
+  /**
+   * New message to teachers/tutors (13-new-message.json). Runs only for a submission the parent
+   * confirmed (preview hash checked here and by runSubmission). One POST, never retried.
+   */
+  type MessageForm = PreparedForm & { body: string };
+  const newMessageWriter: SectionWriter = {
+    kind: 'new_message',
+    async prepare(page, sub) {
+      if (!/^[a-f0-9]{64}$/.test(sub.previewHash)) throw new WriteNotConfirmedError();
+      const N = G.newMessage;
+      const to = (sub.fields.to ?? '').split(',').filter(Boolean);
+      if (!to.length) throw new Error('new_message without recipients');
+      if (!sub.text.trim() || sub.text.length > N.maxChars) throw new Error('new_message text empty or too long');
+      await goto(page, G.messages.page);
+      const people = await page.evaluate((names) => {
+        const w = window as unknown as Record<string, unknown>;
+        return names.flatMap((n) => (Array.isArray(w[n]) ? (w[n] as Record<string, unknown>[]) : []));
+      }, [...N.recipientGlobals]);
+      const body = new URLSearchParams();
+      for (const ref of to) {
+        const r = people.find((p) => p.codi === ref);
+        if (!r || r.acceptaMsg === 'N') throw new Error('recipient not available in GestIB');
+        const female = r.sexe === 'D';
+        const label = (r.esTutor ? N.roleLabel.tutor : N.roleLabel.teacher)[female ? 1 : 0];
+        body.append('dests', ref);
+        body.append('obRmt', String(r.observRemitent ?? ''));
+        body.append('obDst', `${label}: ${String(r.nomPersCarrec ?? '')}`);
+      }
+      body.append('missatge', sub.text);
+      body.append('permetResposta', 'S');
+      if (sub.fields.subject) body.append('assumpte', sub.fields.subject);
+      const form: MessageForm = {
+        screenshot: await page.screenshot(),
+        fieldEcho: { to: String(to.length), text: sub.text },
+        body: body.toString(),
+      };
+      return form;
+    },
+    async submit(page, prepared) {
+      const f = prepared as MessageForm;
+      let res: { ok: boolean; status: number; text: string };
+      try {
+        res = await page.evaluate(
+          async ({ url, body }) => {
+            const r = await fetch(url, {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+              body,
+            });
+            return { ok: r.ok, status: r.status, text: await r.text() };
+          },
+          { url: G.newMessage.sendUrl, body: f.body },
+        );
+      } catch {
+        // Unknown whether it went out: never retry, verify against the sent list instead.
+        return { status: 'ambiguous', detail: 'network error during send' };
+      }
+      if (!res.ok) return { status: res.status >= 500 ? 'ambiguous' : 'failed', detail: `http ${res.status}` };
+      const err = /<error>([\s\S]*?)<\/error>/i.exec(res.text)?.[1]?.trim();
+      return err ? { status: 'failed', detail: 'portal error' } : { status: 'submitted' };
+    },
+    async verify(page, sub) {
+      const N = G.newMessage;
+      // Compare without whitespace: GestIB stores line breaks as <br>.
+      const start = sub.text.replace(/\s+/g, '').slice(0, 40);
+      const found = await page.evaluate(
+        async ({ summaryUrl, listUrl, start }) => {
+          const post = (url: string, body: string) =>
+            fetch(url, {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+              body,
+            }).then((r) => r.json());
+          const sum = await post(summaryUrl, 'llistaEtiquetesFiltre=');
+          const codes: number[] = (sum?.llistatCodisMissatge ?? []).slice(0, 10);
+          if (!codes.length) return null;
+          const list = await post(listUrl, codes.map((c) => `codisMissatges=${c}`).join('&'));
+          const plain = (h: string) => {
+            const d = document.createElement('div');
+            d.innerHTML = h;
+            return (d.textContent ?? '').replace(/\s+/g, '');
+          };
+          const hit = (list as { codi: number; texte?: string }[]).find((m) => plain(m.texte ?? '').startsWith(start));
+          return hit ? String(hit.codi) : null;
+        },
+        { summaryUrl: N.sentSummaryUrl, listUrl: N.sentListUrl, start },
+      );
+      return found ? { verified: true, confirmationRef: found, pageText: '' } : { verified: false };
+    },
+  };
+
   /** Reads each part independently so one failing page never wipes the others. */
   async function readChildDetails(page: Page): Promise<ChildDetails> {
     const errors: ChildDetails['errors'] = [];
@@ -586,8 +712,10 @@ export function createGestibLiveAdapter(): PortalAdapter {
     switchChild,
     sections: () => readers,
     readSchoolCalendar,
+    readContacts,
     readChildDetails,
-    writers: () => ({}), // writes stay off until the forms are captured and the parent confirms each one
+    // Only kinds switched on (ENABLED_WRITERS); every write still needs the parent's confirmation.
+    writers: () => (enabledWriters.has('new_message') ? { new_message: newMessageWriter } : {}),
   };
 }
 

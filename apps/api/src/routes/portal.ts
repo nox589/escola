@@ -236,6 +236,24 @@ export async function portalRoutes(app: FastifyInstance, deps: AppDeps) {
     ),
   );
 
+  /** People the parent can write to in GestIB, tutors first, grouped by child on the client. */
+  app.get('/contacts', auth, async (req) =>
+    fam(deps, req, (db) =>
+      db
+        .select({
+          id: schema.contacts.id,
+          name: schema.contacts.name,
+          role: schema.contacts.role,
+          female: schema.contacts.female,
+          childId: schema.contacts.childId,
+          childLabel: schema.contacts.childLabel,
+          accepts: schema.contacts.accepts,
+        })
+        .from(schema.contacts)
+        .orderBy(desc(schema.contacts.role), asc(schema.contacts.name)),
+    ),
+  );
+
   /** Child page: teachers and timetable (from GestIB's timetable), absences, upcoming agenda. */
   app.get('/children/:id/profile', auth, async (req) => {
     const { id } = idParam.parse(req.params);

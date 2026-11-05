@@ -186,9 +186,19 @@ export interface Submission {
   draftOriginal: string | null;
   preview: string | null;
   previewHash: string | null;
+  fields?: Record<string, string>;
   consentText: string | null;
   errorCode: string | null;
   receipt?: { verifiedAt: string; confirmationRef: string | null; screenshotUrl: string | null } | null;
+}
+export interface Contact {
+  id: string;
+  name: string;
+  role: 'tutor' | 'teacher';
+  female: boolean;
+  childId: string | null;
+  childLabel: string;
+  accepts: boolean;
 }
 export interface CalendarEntry {
   id: string;

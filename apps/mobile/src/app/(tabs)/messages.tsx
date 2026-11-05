@@ -39,12 +39,39 @@ export default function Messages() {
         }
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 12 }}>
-            <Text
-              accessibilityRole="header"
-              style={{ color: c.ink, fontSize: font.title, fontWeight: '700', paddingTop: space.s }}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: space.s,
+              }}
             >
-              {t('cl.messages')}
-            </Text>
+              <Text
+                accessibilityRole="header"
+                style={{ color: c.ink, fontSize: font.title, fontWeight: '700' }}
+              >
+                {t('cl.messages')}
+              </Text>
+              <Pressable
+                onPress={() => router.push('/compose')}
+                accessibilityRole="button"
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  minHeight: 40,
+                  paddingHorizontal: 14,
+                  borderRadius: 20,
+                  backgroundColor: pressed ? c.accentPressed : c.accent,
+                })}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginTop: -2 }}>+</Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+                  {t('cl.compose.newButton')}
+                </Text>
+              </Pressable>
+            </View>
             <AskBar hint={t('cl.askMessages')} />
             <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 8 }}>
               {(['all', 'unread'] as const).map((f) => (

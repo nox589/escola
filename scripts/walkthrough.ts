@@ -76,6 +76,9 @@ async function seedDetails() {
        (${f},${id},'F2',${lit(today)},'2','Asistencia','unjustified',null,true)`);
     q(`INSERT INTO calendar_entries (family_id, child_id, title_original, title_translated, starts_at, all_day, kind, source_ref)
        VALUES (${f},${id},'1a avaluació','1st evaluation', now() + interval '20 days', true, 'evaluation', 'evaluation:1')`);
+    q(`INSERT INTO contacts (family_id, portal_account_id, child_id, portal_ref, name, role, female, child_label, sender_note)
+       SELECT ${f}, portal_account_id, id, ${lit(`T${i}`)}, ${lit(i ? 'GARCIA, JOAN' : 'SERRA, MARIA')}, ${lit(i ? 'teacher' : 'tutor')}, ${i ? 'false' : 'true'}, 'X', 'X - 3r B'
+       FROM children WHERE id = ${id}`);
   }
   return kids.rows.length > 0;
 }
@@ -203,6 +206,19 @@ async function run(page: Page) {
   await page.getByText(/Direcció General/).first().click();
   await page.getByText(/caib\.es\/beques/).first().waitFor({ timeout: 15_000 });
   await shot(page, '10b-chat-long-sender');
+  if (seeded) {
+    step('New message to a teacher, written in English, previewed in Catalan');
+    await page.goto(APP);
+    await page.getByRole('tab', { name: /Messages/ }).click();
+    await page.getByRole('button', { name: /New message/ }).click();
+    await page.getByRole('checkbox', { name: /Maria Serra/i }).click();
+    await page.getByPlaceholder('Subject (optional)').fill('Doctor visit');
+    await page.getByPlaceholder('Write in English').fill('Hello, Alumne will leave at 12:00 on Friday for a doctor visit.');
+    await shot(page, '10c-compose');
+    await page.getByRole('button', { name: 'Translate to Catalan' }).click();
+    await page.getByText('The teacher will receive (Catalan)').waitFor({ timeout: 60_000 });
+    await shot(page, '10d-compose-preview');
+  }
 
   step('Week tab');
   await page.goto(APP);

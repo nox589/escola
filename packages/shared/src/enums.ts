@@ -62,6 +62,7 @@ export const SUBMISSION_KINDS = [
   'upload_document',
   'answer_survey',
   'request_meeting',
+  'new_message',
 ] as const;
 export type SubmissionKind = (typeof SUBMISSION_KINDS)[number];
 

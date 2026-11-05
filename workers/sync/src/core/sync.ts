@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import { SelectorNotDiscoveredError, ParserDriftError } from '../adapters/errors.js';
-import type { ChildDetails, Credentials, NormalisedItem, PortalAdapter, PortalChild, SchoolDay } from '../adapters/types.js';
+import type { ChildDetails, Credentials, NormalisedItem, PortalAdapter, PortalChild, PortalContact, SchoolDay } from '../adapters/types.js';
 import { diffItems, shouldNotify, type DiffResult, type KnownItem } from './diff.js';
 import { guardedLogin, type GuardDecision, type LockoutStore } from './lockoutGuard.js';
 import { log } from './logger.js';
@@ -19,6 +19,7 @@ export interface ItemStore {
   ): Promise<SavedItem[]>;
   /** Removes children the portal no longer lists, keeping their items as family-wide. */
   pruneChildren?(accountId: string, keepRefs: string[]): Promise<number>;
+  saveContacts?(accountId: string, list: PortalContact[]): Promise<number>;
   attributeToChild?(accountId: string, refs: { section: string; portalRef: string; childRef: string }[]): Promise<number>;
   /** Items the portal shows for more than one child are family-wide (child cleared, re-attributed). */
   markFamilyWide?(accountId: string, refs: { section: string; portalRef: string }[]): Promise<number>;
@@ -233,6 +234,17 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
       const n = single.length ? await o.items.attributeToChild(o.accountId, single) : 0;
       const perChild = report.children.map((c) => single.filter((x) => x.childRef === c.ref).length);
       log.info({ accountId: o.accountId, single: single.length, perChild, reattributed: n }, 'items attributed to one child');
+    }
+
+    if (o.adapter.readContacts && o.items.saveContacts) {
+      try {
+        const n = await o.items.saveContacts(o.accountId, await o.adapter.readContacts(page));
+        log.info({ accountId: o.accountId, contacts: n }, 'contacts saved');
+      } catch (e) {
+        if (e instanceof SelectorNotDiscoveredError) throw e;
+        report.errors.push({ section: 'contacts', error: (e instanceof Error ? e.message : String(e)).slice(0, 200) });
+        log.error({ accountId: o.accountId, section: 'contacts' }, 'section failed');
+      }
     }
 
     if (o.adapter.readSchoolCalendar && o.items.saveSchoolCalendar) {

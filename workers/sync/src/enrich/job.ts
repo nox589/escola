@@ -41,7 +41,7 @@ export async function enrichItems(o: {
   embedder: Embedder;
 }): Promise<EnrichResult[]> {
   if (!o.itemIds.length) return [];
-  const { items, locales, childNames, kids } = await withFamily(o.pool, o.familyId, async (db) => {
+  const { items, have, locales, childNames, kids } = await withFamily(o.pool, o.familyId, async (db) => {
     const items = await db
       .select({ item: schema.items, childName: schema.children.displayName })
       .from(schema.items)
@@ -54,8 +54,13 @@ export async function enrichItems(o: {
     const kids = await db
       .select({ id: schema.children.id, name: schema.children.displayName, classLabel: schema.children.classLabel })
       .from(schema.children);
+    const have = await db
+      .select({ itemId: schema.itemTranslations.itemId, lang: schema.itemTranslations.lang })
+      .from(schema.itemTranslations)
+      .where(inArray(schema.itemTranslations.itemId, o.itemIds));
     return {
       items,
+      have,
       locales: [...new Set(members.map((m) => m.locale as Locale))].sort((a) => (a === 'en' ? -1 : 0)),
       childNames: kids.map((k) => k.name),
       kids,
@@ -68,7 +73,10 @@ export async function enrichItems(o: {
 
   const results: EnrichResult[] = [];
   for (const { item, childName } of items) {
-    if (item.enrichedHash === enrichMark(item.contentHash, o.llm.model)) continue;
+    // Already processed with this model and translated into every family language: nothing to do.
+    const translated = new Set(have.filter((h) => h.itemId === item.id).map((h) => h.lang));
+    if (item.enrichedHash === enrichMark(item.contentHash, o.llm.model) && targetLocales.every((l) => translated.has(l)))
+      continue;
     try {
       // 1. Translate + classify per locale (classification taken from the first).
       const per = [] as { lang: Locale; e: Awaited<ReturnType<typeof enrichItem>> }[];

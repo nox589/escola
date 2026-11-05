@@ -310,6 +310,43 @@ d('API', () => {
     expect((await app.inject({ url: `/v1/threads/${longKey}`, headers: as(A.accessToken) })).statusCode).toBe(404);
   });
 
+  it('new message to a teacher: contacts list, Catalan draft with recipients, refused while the writer is off', async () => {
+    const [t1, t2] = await withFamily(pool, familyA, (tx) =>
+      tx
+        .insert(schema.contacts)
+        .values([
+          { familyId: familyA, portalAccountId: accountId, childId, portalRef: 'T1', name: 'TUTOR ONE', role: 'tutor', childLabel: 'MAYA' },
+          { familyId: familyA, portalAccountId: accountId, childId, portalRef: 'T2', name: 'NO MAIL', role: 'teacher', childLabel: 'MAYA', accepts: false },
+        ])
+        .returning(),
+    );
+    const list = (await app.inject({ url: '/v1/contacts', headers: as(A.accessToken) })).json();
+    expect(list.map((c: { name: string; role: string }) => [c.name, c.role])).toEqual([['TUTOR ONE', 'tutor'], ['NO MAIL', 'teacher']]);
+    expect((await app.inject({ url: '/v1/contacts', headers: as(B.accessToken) })).json()).toEqual([]);
+
+    const draft = (contact_ids: string[]) =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/submissions',
+        headers: as(A.accessToken),
+        payload: { kind: 'new_message', child_id: childId, user_input: { text: 'Leo is ill today.', subject: 'Absence', contact_ids } },
+      });
+    expect((await draft([t2!.id])).json().error).toBe('bad_recipients'); // does not accept messages
+    const ok = await draft([t1!.id]);
+    expect(ok.statusCode).toBe(200);
+    const sub = ok.json();
+    expect(sub).toMatchObject({ kind: 'new_message', state: 'awaiting_confirmation', draftOriginal: expect.any(String) });
+    expect(sub.fields).toMatchObject({ to: 'T1', toNames: 'TUTOR ONE', subject: expect.any(String) });
+    // Writer not switched on in this test app: drafting works, sending is refused.
+    const confirm = await app.inject({
+      method: 'POST',
+      url: `/v1/submissions/${sub.id}/confirm`,
+      headers: as(A.accessToken),
+      payload: { preview_hash: sub.previewHash },
+    });
+    expect(confirm.json().error).toBe('kind_not_enabled');
+  });
+
   it('reception: preview hash, submit mandate, edit invalidates, confirm queues exactly once', async () => {
     const create = await app.inject({
       method: 'POST',

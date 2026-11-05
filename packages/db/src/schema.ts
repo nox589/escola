@@ -91,6 +91,7 @@ export const families = pgTable('families', {
     .references(() => users.id),
   subscriptionStatus: subscriptionStatus('subscription_status').notNull().default('trial'),
   revenuecatAppUserId: text('revenuecat_app_user_id'),
+  labelsLang: text('labels_lang'),
 });
 
 export const familyMembers = pgTable(
@@ -198,6 +199,28 @@ export const absences = pgTable(
     canJustify: boolean('can_justify').notNull().default(false),
   },
   (t) => [uniqueIndex('absences_key').on(t.childId, t.portalRef)],
+);
+
+/** Teachers and tutors the parent can write to in GestIB (docs/capture/13-new-message.json). */
+export const contacts = pgTable(
+  'contacts',
+  {
+    id: id(),
+    ...stamps,
+    familyId: familyRef(),
+    portalAccountId: uuid('portal_account_id')
+      .notNull()
+      .references(() => portalAccounts.id, { onDelete: 'cascade' }),
+    childId: uuid('child_id').references(() => children.id, { onDelete: 'set null' }),
+    portalRef: text('portal_ref').notNull(),
+    name: text('name').notNull(),
+    role: text('role').$type<'tutor' | 'teacher'>().notNull(),
+    female: boolean('female').notNull().default(false),
+    childLabel: text('child_label').notNull().default(''),
+    senderNote: text('sender_note').notNull().default(''),
+    accepts: boolean('accepts').notNull().default(true),
+  },
+  (t) => [uniqueIndex('contacts_key').on(t.portalAccountId, t.portalRef, t.childLabel)],
 );
 
 export const items = pgTable(

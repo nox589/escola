@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull } from '@escola/db';
+import { and, desc, eq, isNotNull, isNull } from '@escola/db';
 import type pg from 'pg';
 import { schema, withFamily } from '@escola/db';
 import type { LlmProvider } from '@escola/llm';
@@ -24,13 +24,26 @@ export function parseLabelReply(reply: string, n: number): string[] | null {
  */
 export async function translateLabels(o: { pool: pg.Pool; familyId: string; llm: LlmProvider }): Promise<number> {
   const { lang, entries, kids } = await withFamily(o.pool, o.familyId, async (db) => {
+    // The language most recently chosen in the family (labels have one translation each).
     const members = await db
       .select({ locale: schema.users.locale })
       .from(schema.familyMembers)
-      .innerJoin(schema.users, eq(schema.users.id, schema.familyMembers.userId));
-    const locales = [...new Set(members.map((m) => m.locale))];
+      .innerJoin(schema.users, eq(schema.users.id, schema.familyMembers.userId))
+      .orderBy(desc(schema.users.updatedAt));
+    const lang = members[0]?.locale ?? 'en';
+    const [fam] = await db.select({ id: schema.families.id, labelsLang: schema.families.labelsLang }).from(schema.families);
+    if (fam && fam.labelsLang !== lang) {
+      // Language changed: drop the old label translations so they are redone below.
+      await db.update(schema.calendarEntries).set({ titleTranslated: null }).where(isNotNull(schema.calendarEntries.sourceRef));
+      for (const k of await db.select({ id: schema.children.id, timetable: schema.children.timetable }).from(schema.children))
+        await db
+          .update(schema.children)
+          .set({ timetable: k.timetable.map(({ subjectTranslated: _drop, ...rest }) => rest) })
+          .where(eq(schema.children.id, k.id));
+      await db.update(schema.families).set({ labelsLang: lang }).where(eq(schema.families.id, fam.id));
+    }
     return {
-      lang: locales.includes('en') || !locales.length ? 'en' : locales[0]!,
+      lang,
       entries: await db
         .select({ id: schema.calendarEntries.id, title: schema.calendarEntries.titleOriginal })
         .from(schema.calendarEntries)

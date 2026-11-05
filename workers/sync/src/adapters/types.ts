@@ -16,6 +16,8 @@ export interface PortalAdapter {
   readSchoolCalendar?(page: Page): Promise<SchoolDay[]>;
   /** Optional: timetable, absences and agenda for the child currently selected. Read-only. */
   readChildDetails?(page: Page, child: PortalChild): Promise<ChildDetails>;
+  /** Optional: teachers and tutors the parent may write to (all children). Read-only. */
+  readContacts?(page: Page): Promise<PortalContact[]>;
   writers(): Partial<Record<SubmissionKind, SectionWriter>>;
 }
 
@@ -42,6 +44,19 @@ export interface PortalChild {
   displayName: string;
   schoolName?: string;
   classLabel?: string;
+}
+
+export interface PortalContact {
+  ref: string;
+  name: string;
+  role: 'tutor' | 'teacher';
+  female: boolean;
+  /** The child this teacher teaches, as GestIB writes it (given names, and 'SURNAMES, GIVEN'). */
+  childGiven: string;
+  childFull: string;
+  /** GestIB's note about the parent for this recipient ('<child> - <class>'); sent back as is. */
+  senderNote: string;
+  accepts: boolean;
 }
 
 export interface SectionReader {

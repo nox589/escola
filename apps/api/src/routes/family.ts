@@ -41,6 +41,9 @@ export async function familyRoutes(app: FastifyInstance, deps: AppDeps) {
 
   app.patch('/me', auth, async (req) => {
     const body = patchMeRequest.parse(req.body);
+    const [before] = await asApp(deps.pool, (db) =>
+      db.select({ locale: schema.users.locale }).from(schema.users).where(eq(schema.users.id, me(req).userId)),
+    );
     await asApp(deps.pool, (db) =>
       db
         .update(schema.users)
@@ -51,6 +54,14 @@ export async function familyRoutes(app: FastifyInstance, deps: AppDeps) {
         })
         .where(eq(schema.users.id, me(req).userId)),
     );
+    // New language: a sync translates everything not yet in it (items, labels, subjects).
+    if (body.locale && body.locale !== before?.locale) {
+      const accounts = await fam(deps, req, (db) =>
+        db.select({ id: schema.portalAccounts.id, status: schema.portalAccounts.status }).from(schema.portalAccounts),
+      );
+      for (const a of accounts.filter((x) => x.status === 'active'))
+        await deps.queue.sync({ familyId: me(req).familyId, portalAccountId: a.id, manual: true }).catch(() => undefined);
+    }
     return { ok: true };
   });
 

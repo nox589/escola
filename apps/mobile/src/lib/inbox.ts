@@ -70,3 +70,10 @@ export function niceSender(name: string): string {
     })
     .join(' ');
 }
+
+/** GestIB lists people as 'SURNAMES, Given'; show 'Given Surnames' in normal case. */
+export function personName(name: string): string {
+  const n = niceSender(name);
+  const m = /^([^,]+),\s*(.+)$/.exec(n);
+  return m ? `${m[2]} ${m[1]}` : n;
+}
