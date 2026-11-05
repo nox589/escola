@@ -34,6 +34,12 @@ export const en = {
       "past": "Past",
     },
     "nothingPast": "Nothing older here.",
+    "seeAll": "See all",
+    "seeAllUpdates": "See all {{count}} updates",
+    "inbox": {
+      "unread": "Unread",
+      "allRead": "All caught up.",
+    },
     "callSchool": "Call school",
     "whichSchool": "Call which school?",
     "chat": {
@@ -138,6 +144,7 @@ export const en = {
       "searchDocs": "Search documents",
       "noDocs": "No documents yet.",
       "inShort": "In short",
+      "openFeed": "Opens the family feed",
       "summary": "{{actions}} to do · {{updates}} updates in the last 30 days",
       "noUpdates": "No updates yet."
     },

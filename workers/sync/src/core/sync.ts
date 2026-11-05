@@ -19,6 +19,7 @@ export interface ItemStore {
   ): Promise<SavedItem[]>;
   /** Removes children the portal no longer lists, keeping their items as family-wide. */
   pruneChildren?(accountId: string, keepRefs: string[]): Promise<number>;
+  attributeToChild?(accountId: string, refs: { section: string; portalRef: string; childRef: string }[]): Promise<number>;
   /** Items the portal shows for more than one child are family-wide (child cleared, re-attributed). */
   markFamilyWide?(accountId: string, refs: { section: string; portalRef: string }[]): Promise<number>;
   /** Replaces the school-calendar entries (holidays etc.) for this account. */
@@ -220,6 +221,15 @@ export async function runSync(o: RunSyncOptions): Promise<SyncReport> {
           return { section, portalRef };
         });
       if (shared.length) await o.items.markFamilyWide(o.accountId, shared);
+    }
+    if (report.children.length > 1 && o.items.attributeToChild) {
+      const single = [...seenUnder.entries()]
+        .filter(([, kids]) => kids.size === 1)
+        .map(([k, kids]) => {
+          const [section, portalRef] = k.split('\u0000') as [string, string];
+          return { section, portalRef, childRef: [...kids][0]! };
+        });
+      if (single.length) await o.items.attributeToChild(o.accountId, single);
     }
 
     if (o.adapter.readSchoolCalendar && o.items.saveSchoolCalendar) {

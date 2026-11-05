@@ -22,6 +22,7 @@ import { Loading } from '@/components/ui';
 import { LANG_NAMES } from '@/i18n';
 import { api, ApiError, type Submission, type ThreadDetail } from '@/lib/api';
 import { shortDate, useChildren, useMe } from '@/lib/hooks';
+import { niceSender } from '@/lib/inbox';
 import { space, useTheme } from '@/lib/theme';
 
 async function reauthenticate(prompt: string): Promise<boolean> {
@@ -93,7 +94,7 @@ export default function ThreadScreen() {
 
   if (!q.data) return <Loading />;
   const th = q.data;
-  const name = th.sender ?? t('cl.school');
+  const name = th.sender ? niceSender(th.sender) : t('cl.school');
   const latest = th.messages[th.messages.length - 1]!;
   const errorText = (e: unknown) => {
     const code = e instanceof ApiError ? e.code : '';

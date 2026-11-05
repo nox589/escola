@@ -124,24 +124,65 @@ export function createGestibLiveAdapter(): PortalAdapter {
     });
   }
 
-  async function listChildren(page: Page): Promise<PortalChild[]> {
-    await goto(page, 'home');
+  /** The switcher buttons on home: every child EXCEPT the one currently selected (03-home.json). */
+  async function readChips(page: Page): Promise<PortalChild[]> {
     const out: PortalChild[] = [];
-    const seen = new Set<string>();
-    const current = await selectedName(page);
-    const currentRef = await page.locator(G.children.selectedRef).first().inputValue();
     for (const chip of await page.locator(G.children.chip).all()) {
       const name = firstLine(await chip.innerText());
       const ref = await chip.locator('xpath=ancestor::form[1]').locator(G.children.chipRefInput).first().inputValue();
-      if (!ref || !name || seen.has(name)) continue;
-      seen.add(name);
-      out.push({ ref, displayName: name });
+      if (ref && name && !out.some((c) => c.ref === ref)) out.push({ ref, displayName: name });
     }
-    // The switcher chips list every child (the selected one included, under a shorter label than
-    // the card). Only an account with no chips at all falls back to the selected card.
-    if (!out.length && current) out.push({ ref: currentRef, displayName: current });
-    if (!out.length) throw new ParserDriftError('no children found on home');
     return out;
+  }
+
+  /** True when GestIB shows a timetable group for the selected child this school year. */
+  async function hasCurrentGroup(page: Page, child: PortalChild): Promise<boolean> {
+    await switchChild(page, child);
+    return G.timetable.matriculaCall.test(await pageHtml(page, G.timetable.page));
+  }
+
+  async function listChildren(page: Page): Promise<PortalChild[]> {
+    await goto(page, 'home');
+    const first = await readChips(page);
+    if (!first.length) {
+      // Single-record account: only the selected card, no switcher.
+      const current = await selectedName(page);
+      const currentRef = await page.locator(G.children.selectedRef).first().inputValue();
+      if (!current) throw new ParserDriftError('no children found on home');
+      return [{ ref: currentRef, displayName: current }];
+    }
+    // The selected child has no button, so select another record and read the buttons again:
+    // the union of both lists is every record, all with switcher ids (never the card's id).
+    await switchChild(page, first[0]!);
+    const all = [...first];
+    for (const c of await readChips(page)) if (!all.some((x) => x.ref === c.ref)) all.push(c);
+
+    // GestIB can keep an old enrolment of the same child as a separate record (e.g. an infant
+    // school entry with a shorter name). Same first name and one name contained in the other:
+    // keep the record with a timetable this year; if that doesn't decide, the fuller name.
+    const words = (n: string) => n.toLocaleLowerCase('ca').split(/\s+/).filter(Boolean);
+    const sameChild = (a: string, b: string) => {
+      const [wa, wb] = [words(a), words(b)];
+      if (wa[0] !== wb[0]) return false;
+      const [small, big] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+      return small.every((w) => big.includes(w));
+    };
+    const keep: PortalChild[] = [];
+    const done = new Set<string>();
+    for (const c of all) {
+      if (done.has(c.ref)) continue;
+      const group = all.filter((x) => !done.has(x.ref) && sameChild(x.displayName, c.displayName));
+      group.forEach((x) => done.add(x.ref));
+      if (group.length === 1) {
+        keep.push(c);
+        continue;
+      }
+      const current: PortalChild[] = [];
+      for (const x of group) if (await hasCurrentGroup(page, x).catch(() => false)) current.push(x);
+      const pool = current.length ? current : group;
+      keep.push(pool.sort((x, y) => words(y.displayName).length - words(x.displayName).length)[0]!);
+    }
+    return keep;
   }
 
   async function switchChild(page: Page, child: PortalChild) {

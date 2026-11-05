@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { and, eq, isNotNull, isNull, or } from '@escola/db';
+import { and, eq, isNotNull, isNull, ne, or } from '@escola/db';
 import type pg from 'pg';
 import { schema, withFamily } from '@escola/db';
 import type { BlobStore } from '@escola/storage';
@@ -140,6 +140,39 @@ export class PgItemStore implements ItemStore {
    * Items GestIB lists under more than one child: marked shared once and re-enriched, so the AI
    * decides who they are for (named child, or by class/stage, else family-wide).
    */
+  /**
+   * Items a per-child read listed under exactly one child belong to that child. Repairs items left
+   * family-wide by an earlier bad listing (sets shared=false and the child; re-enriches on change).
+   */
+  async attributeToChild(accountId: string, refs: { section: string; portalRef: string; childRef: string }[]): Promise<number> {
+    return withFamily(this.pool, this.familyId, async (db) => {
+      const kids = await db
+        .select({ id: schema.children.id, ref: schema.children.portalChildRef })
+        .from(schema.children)
+        .where(eq(schema.children.portalAccountId, accountId));
+      let n = 0;
+      for (const r of refs) {
+        const childId = kids.find((k) => k.ref === r.childRef)?.id;
+        if (!childId) continue;
+        const rows = await db
+          .update(schema.items)
+          .set({ shared: false, childId, enrichedHash: null })
+          .where(
+            and(
+              eq(schema.items.portalAccountId, accountId),
+              eq(schema.items.section, r.section as never),
+              eq(schema.items.portalItemRef, r.portalRef),
+              or(eq(schema.items.shared, true), isNull(schema.items.childId), ne(schema.items.childId, childId)),
+            ),
+          )
+          .returning({ id: schema.items.id });
+        for (const row of rows) await db.update(schema.calendarEntries).set({ childId }).where(eq(schema.calendarEntries.itemId, row.id));
+        n += rows.length;
+      }
+      return n;
+    });
+  }
+
   async markFamilyWide(accountId: string, refs: { section: string; portalRef: string }[]): Promise<number> {
     return withFamily(this.pool, this.familyId, async (db) => {
       let n = 0;

@@ -73,3 +73,4 @@ export function threadKeyOf(sender: string | null): string {
   bytes.forEach((b) => (bin += String.fromCharCode(b)));
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
+

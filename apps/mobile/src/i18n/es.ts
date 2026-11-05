@@ -36,6 +36,12 @@ export const es: Strings = {
       "past": "Pasado",
     },
     "nothingPast": "Nada anterior aquí.",
+    "seeAll": "Ver todo",
+    "seeAllUpdates": "Ver las {{count}} novedades",
+    "inbox": {
+      "unread": "No leídos",
+      "allRead": "Todo leído.",
+    },
     "callSchool": "Llamar al centro",
     "whichSchool": "¿A qué centro llamas?",
     "chat": {
@@ -140,6 +146,7 @@ export const es: Strings = {
       "searchDocs": "Buscar documentos",
       "noDocs": "Aún no hay documentos.",
       "inShort": "En resumen",
+      "openFeed": "Abre el resumen familiar",
       "summary": "{{actions}} pendientes · {{updates}} novedades en 30 días",
       "noUpdates": "Aún no hay novedades."
     },

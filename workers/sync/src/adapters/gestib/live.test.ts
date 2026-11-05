@@ -12,14 +12,18 @@ const W = 'https://www3.caib.es/xestibback/families/';
 
 function fakePortal(opts: { password: string; captcha?: boolean }) {
   let loggedIn = false;
-  let selected = 'A';
+  // Like the real portal: the selected child has no switcher button, and Ana also has an old
+  // enrolment record (shorter name, no timetable this year). Biel starts selected, which is the
+  // case that once listed Ana twice and dropped Biel.
+  let selected = 'B';
   const calls: string[] = [];
-  const kids = { A: 'Ana Test', B: 'Biel Test' } as Record<string, string>;
+  const kids = { A: 'Ana Maria Test', B: 'Biel Test', P: 'Ana Test' } as Record<string, string>;
   const shell = (body: string) =>
     `<html><body><nav class="navbar"><span id="numMissatgeMenu">1</span></nav>
      <input type="hidden" id="codiFillSeleccionat" value="SEL${selected}">
      <dd><div class="alumno-seleccionado-card"><img class="img-circle"><span>${kids[selected]}</span><small>CEIP Fake</small></div></dd>
      ${Object.entries(kids)
+       .filter(([k]) => k !== selected)
        .map(([k, n]) => `<form method="post"><input type="hidden" name="idFill" value="ID${k}"><button type="button" class="alumno-chip" onclick="this.closest('form').submit()"><span>${n}</span></button></form>`)
        .join('')}
      <div class="content-wrapper">${body}</div></body></html>`;
@@ -76,6 +80,7 @@ function fakePortal(opts: { password: string; captcha?: boolean }) {
         return html(shell(`<div class="box box-primary"><form id="formCalendariEscolar_X" method="post" action="calendari/calendariCentre" target="ifr"></form><div class="calendari-iframe-box"><iframe name="ifr" class="calendari-iframe" src="calendari/calendariCentre"></iframe></div></div>`));
       if (slug === 'calendari/calendariCentre')
         return html(`<div class="month-container"><table><thead><tr><th class="month-title">Desembre</th></tr></thead><tbody><tr><td class="day old">30</td><td class="day">1</td><td class="day festiu">8</td><td class="day vacances">23</td></tr></tbody></table></div><div class="month-container"><table><thead><tr><th class="month-title">Gener</th></tr></thead><tbody><tr><td class="day vacances">2</td><td class="day new vacances">3</td><td class="day noLectiu">7</td></tr></tbody></table></div>`);
+      if (slug === 'horari' && selected === 'P') return html(shell('<p>No hi ha horari</p>'));
       if (slug === 'horari')
         return html(shell(`<div id="horari-container-MAT${selected}"></div><script>mostraHorariAlumne('MAT${selected}', 'CEN', 'GR', '2026');</script>`));
       if (slug === 'llistes/alumnat/quadrantHorariAlumnes.json') {
@@ -144,7 +149,8 @@ d('GestIB live adapter (synthetic capture-shaped pages)', () => {
     const page = res.page;
 
     const kids = await a.listChildren(page);
-    expect(kids.map((k) => k.displayName)).toEqual(['Ana Test', 'Biel Test']);
+    expect(kids.map((k) => k.displayName).sort()).toEqual(['Ana Maria Test', 'Biel Test']);
+    expect(kids.map((k) => k.ref).sort()).toEqual(['IDA', 'IDB']); // switcher ids only; the old enrolment (IDP) dropped
 
     await a.switchChild(page, kids[1]!);
     const [msgs, circs, auths] = a.sections();

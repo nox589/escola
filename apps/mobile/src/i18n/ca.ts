@@ -36,6 +36,12 @@ export const ca: Strings = {
       "past": "Passat",
     },
     "nothingPast": "No hi ha res anterior.",
+    "seeAll": "Veure-ho tot",
+    "seeAllUpdates": "Veure les {{count}} novetats",
+    "inbox": {
+      "unread": "No llegits",
+      "allRead": "Tot llegit.",
+    },
     "callSchool": "Telefonar al centre",
     "whichSchool": "A quin centre truques?",
     "chat": {
@@ -140,6 +146,7 @@ export const ca: Strings = {
       "searchDocs": "Cerca documents",
       "noDocs": "Encara no hi ha documents.",
       "inShort": "En resum",
+      "openFeed": "Obre el resum familiar",
       "summary": "{{actions}} pendents · {{updates}} novetats en 30 dies",
       "noUpdates": "Encara no hi ha novetats."
     },

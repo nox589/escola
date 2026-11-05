@@ -4,49 +4,22 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { api, type CalendarEntry } from '@/lib/api';
 import { firstName } from '@/lib/todo';
-import { useTheme } from '@/lib/theme';
+import { font, useTheme } from '@/lib/theme';
 import { Dot } from './Clases';
 
-export type Period = 'current' | 'past';
-
-/** Two-way switch: what matters now vs everything that has passed. */
-export function PeriodToggle({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
+/** Small "See all" link for section headers. */
+export function SeeAll({ onPress, label }: { onPress: () => void; label?: string }) {
   const { t } = useTranslation();
   const c = useTheme();
   return (
-    <View
-      accessibilityRole="tablist"
-      style={{
-        flexDirection: 'row',
-        gap: 4,
-        backgroundColor: c.card,
-        borderWidth: 1,
-        borderColor: c.line,
-        borderRadius: 14,
-        padding: 4,
-      }}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="link"
+      hitSlop={8}
+      style={{ minHeight: 36, justifyContent: 'center' }}
     >
-      {(['current', 'past'] as const).map((p) => (
-        <Pressable
-          key={p}
-          onPress={() => onChange(p)}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: value === p }}
-          style={{
-            flex: 1,
-            minHeight: 38,
-            borderRadius: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: value === p ? c.accent : 'transparent',
-          }}
-        >
-          <Text style={{ color: value === p ? '#FFFFFF' : c.ink, fontWeight: '700', fontSize: 14 }}>
-            {t(`cl.period.${p}`)}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
+      <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>{label ?? t('cl.seeAll')} ›</Text>
+    </Pressable>
   );
 }
 
@@ -55,10 +28,12 @@ export function ComingUp({
   childId,
   limit = 4,
   days = 21,
+  onSeeAll,
 }: {
   childId?: string;
   limit?: number;
   days?: number;
+  onSeeAll?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const c = useTheme();
@@ -72,14 +47,18 @@ export function ComingUp({
         `/calendar?from=${from.toISOString()}&to=${to.toISOString()}${childId ? `&child_id=${childId}` : ''}`,
       ),
   });
-  const list = (q.data ?? []).filter((e) => e.kind !== 'school').slice(0, limit);
+  const upcoming = (q.data ?? []).filter((e) => e.kind !== 'school');
+  const list = upcoming.slice(0, limit);
   if (!list.length) return null;
   const loc = i18n.language === 'en' ? 'en-GB' : i18n.language;
   return (
     <View style={{ gap: 8 }}>
-      <Text accessibilityRole="header" style={{ color: c.ink, fontSize: 17, fontWeight: '700' }}>
-        {t('cl.child.upcoming')}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text accessibilityRole="header" style={{ color: c.ink, fontSize: font.h2, fontWeight: '700' }}>
+          {t('cl.child.upcoming')}
+        </Text>
+        {onSeeAll ? <SeeAll onPress={onSeeAll} /> : null}
+      </View>
       {list.map((e) => (
         <Pressable
           key={e.id}

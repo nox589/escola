@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { useThreads } from '@/lib/hooks';
 import { useTheme } from '@/lib/theme';
@@ -8,6 +9,9 @@ import { useTheme } from '@/lib/theme';
 export default function TabsLayout() {
   const { t } = useTranslation();
   const c = useTheme();
+  const insets = useSafeAreaInsets();
+  // Breathing room under the labels, on top of the phone's home-indicator area.
+  const bottom = Math.max(insets.bottom, 8) + 10;
   const unread = (useThreads().data ?? []).reduce((n, th) => n + th.unread, 0);
   return (
     <Tabs
@@ -15,8 +19,15 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-        tabBarStyle: { backgroundColor: c.card, borderTopColor: c.line, height: 64, paddingTop: 6 },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
+        tabBarStyle: {
+          backgroundColor: c.card,
+          borderTopColor: c.line,
+          height: 68 + bottom,
+          paddingTop: 8,
+          paddingBottom: bottom,
+        },
+        tabBarItemStyle: { paddingVertical: 2 },
         sceneStyle: { backgroundColor: c.bg },
       }}
     >

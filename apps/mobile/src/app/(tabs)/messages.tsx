@@ -1,24 +1,35 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AskBar, Dot } from '@/components/Clases';
 import { P } from '@/components/ui';
-import { relative, useThreads } from '@/lib/hooks';
+import { useThreads } from '@/lib/hooks';
+import { inboxDate, niceSender } from '@/lib/inbox';
 import { font, space, useTheme } from '@/lib/theme';
 
-/** Messages: one conversation per teacher or office, newest first, like a chat app's inbox. */
+type Filter = 'all' | 'unread';
+
+/**
+ * Messages: an inbox like email. One row per sender (newest first); unread rows are bold with a
+ * dot. Opening a row shows the conversation.
+ */
 export default function Messages() {
   const { t, i18n } = useTranslation();
   const c = useTheme();
   const threads = useThreads();
+  const [filter, setFilter] = useState<Filter>('all');
+  const all = threads.data ?? [];
+  const unreadCount = all.filter((x) => x.unread).length;
+  const list = filter === 'unread' ? all.filter((x) => x.unread) : all;
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <FlatList
-        data={threads.data ?? []}
+        data={list}
         keyExtractor={(x) => x.key}
-        contentContainerStyle={{ padding: space.xl, gap: 8, paddingBottom: space.xxl }}
+        contentContainerStyle={{ paddingHorizontal: space.xl, paddingBottom: space.xxl }}
         refreshControl={
           <RefreshControl
             refreshing={threads.isRefetching}
@@ -27,7 +38,7 @@ export default function Messages() {
           />
         }
         ListHeaderComponent={
-          <View style={{ gap: 16, marginBottom: 6 }}>
+          <View style={{ gap: 16, marginBottom: 12 }}>
             <Text
               accessibilityRole="header"
               style={{ color: c.ink, fontSize: font.title, fontWeight: '700', paddingTop: space.s }}
@@ -35,99 +46,105 @@ export default function Messages() {
               {t('cl.messages')}
             </Text>
             <AskBar hint={t('cl.askMessages')} />
-            {!threads.isLoading && !threads.data?.length ? (
+            <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 8 }}>
+              {(['all', 'unread'] as const).map((f) => (
+                <Pressable
+                  key={f}
+                  onPress={() => setFilter(f)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: filter === f }}
+                  style={{
+                    minHeight: 36,
+                    paddingHorizontal: 14,
+                    borderRadius: 18,
+                    justifyContent: 'center',
+                    backgroundColor: filter === f ? c.accent : c.card,
+                    borderWidth: 1,
+                    borderColor: filter === f ? c.accent : c.line,
+                  }}
+                >
+                  <Text style={{ color: filter === f ? '#FFFFFF' : c.ink, fontWeight: '600', fontSize: 14 }}>
+                    {f === 'all'
+                      ? t('cl.all')
+                      : `${t('cl.inbox.unread')}${unreadCount ? ` · ${unreadCount}` : ''}`}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {!threads.isLoading && !list.length ? (
               <P muted small>
-                {t('cl.noMessages')}
+                {filter === 'unread' && all.length ? t('cl.inbox.allRead') : t('cl.noMessages')}
               </P>
             ) : null}
           </View>
         }
-        renderItem={({ item: th }) => {
-          const name = th.sender ?? t('cl.school');
+        renderItem={({ item: th, index }) => {
+          const name = th.sender ? niceSender(th.sender) : t('cl.school');
+          const unread = th.unread > 0;
+          const first = index === 0;
+          const last = index === list.length - 1;
           return (
             <Pressable
               onPress={() => router.push({ pathname: '/thread/[key]', params: { key: th.key } })}
               accessibilityRole="button"
-              accessibilityLabel={`${name}${th.unread ? `, ${t('cl.unread', { count: th.unread })}` : ''}`}
+              accessibilityLabel={`${name}${unread ? `, ${t('cl.unread', { count: th.unread })}` : ''}`}
               style={({ pressed }) => ({
                 flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-                padding: 12,
-                borderRadius: 16,
-                backgroundColor: pressed ? c.accentSoft : c.card,
-                borderWidth: 1,
+                gap: 10,
+                paddingVertical: 14,
+                paddingRight: 14,
+                paddingLeft: 10,
+                backgroundColor: pressed ? c.accentSoft : unread ? c.card : c.bg,
                 borderColor: c.line,
+                borderLeftWidth: 1,
+                borderRightWidth: 1,
+                borderTopWidth: 1,
+                borderBottomWidth: last ? 1 : 0,
+                borderTopLeftRadius: first ? 16 : 0,
+                borderTopRightRadius: first ? 16 : 0,
+                borderBottomLeftRadius: last ? 16 : 0,
+                borderBottomRightRadius: last ? 16 : 0,
               })}
             >
-              <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 23,
-                  backgroundColor: c.accentSoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ color: c.accent, fontSize: 18, fontWeight: '700' }}>
-                  {name.trim()[0]?.toUpperCase() ?? '?'}
-                </Text>
+              <View style={{ width: 10, paddingTop: 7, alignItems: 'center' }}>
+                {unread ? (
+                  <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.accent }} />
+                ) : null}
               </View>
               <View style={{ flex: 1, gap: 3 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
                   <Text
-                    style={{
-                      color: c.ink,
-                      fontSize: 16,
-                      fontWeight: th.unread ? '700' : '600',
-                      flexShrink: 1,
-                    }}
+                    style={{ flex: 1, color: c.ink, fontSize: 15, fontWeight: unread ? '700' : '500' }}
                     numberOfLines={1}
                   >
                     {name}
                   </Text>
-                  {th.children.map((k) => (
-                    <Dot key={k.id} colour={k.colour} />
-                  ))}
-                  {th.lastAt ? (
-                    <Text
-                      style={{
-                        marginLeft: 'auto',
-                        color: th.unread ? c.accent : c.muted,
-                        fontSize: 12,
-                        fontWeight: th.unread ? '700' : '400',
-                      }}
-                    >
-                      {relative(th.lastAt, i18n.language)}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text
-                    style={{ color: th.unread ? c.ink : c.muted, fontSize: 14, flex: 1 }}
                     numberOfLines={1}
+                    style={{
+                      flexShrink: 0,
+                      color: unread ? c.accent : c.muted,
+                      fontSize: 13,
+                      fontWeight: unread ? '700' : '400',
+                    }}
                   >
-                    {th.lastSummary || th.lastTitle}
+                    {inboxDate(th.lastAt, i18n.language)}
                   </Text>
-                  {th.unread ? (
-                    <Text
-                      style={{
-                        minWidth: 22,
-                        textAlign: 'center',
-                        backgroundColor: c.lime,
-                        color: c.ink,
-                        fontSize: 12,
-                        fontWeight: '700',
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 11,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {th.unread}
-                    </Text>
-                  ) : null}
+                </View>
+                <Text
+                  style={{ color: c.ink, fontSize: 14, fontWeight: unread ? '700' : '400' }}
+                  numberOfLines={1}
+                >
+                  {th.lastTitle}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ flex: 1, color: c.muted, fontSize: 13, lineHeight: 18 }} numberOfLines={2}>
+                    {th.lastSummary}
+                  </Text>
+                  {th.children.map((k) => (
+                    <Dot key={k.id} colour={k.colour} size={7} />
+                  ))}
+                  {th.count > 1 ? <Text style={{ color: c.muted, fontSize: 12 }}>{th.count}</Text> : null}
                 </View>
               </View>
             </Pressable>

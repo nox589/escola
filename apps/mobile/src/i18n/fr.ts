@@ -36,6 +36,12 @@ export const fr: Strings = {
       "past": "Passé",
     },
     "nothingPast": "Rien de plus ancien ici.",
+    "seeAll": "Tout voir",
+    "seeAllUpdates": "Voir les {{count}} nouveautés",
+    "inbox": {
+      "unread": "Non lus",
+      "allRead": "Tout est lu.",
+    },
     "callSchool": "Appeler l’école",
     "whichSchool": "Quelle école appeler ?",
     "chat": {
@@ -140,6 +146,7 @@ export const fr: Strings = {
       "searchDocs": "Rechercher des documents",
       "noDocs": "Pas encore de documents.",
       "inShort": "En bref",
+      "openFeed": "Ouvre le fil familial",
       "summary": "{{actions}} à faire · {{updates}} nouveautés en 30 jours",
       "noUpdates": "Pas encore de nouveautés."
     },

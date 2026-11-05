@@ -6,17 +6,8 @@ import { Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-nat
 import { CallSchoolButton } from '@/components/CallSchool';
 import { BackLink } from '@/components/Clases';
 import { Icon } from '@/components/Icon';
-import { AbsenceCard, ItemCard, NeedsCard } from '@/components/ItemCard';
-import { ComingUp, type Period, PeriodToggle } from '@/components/Period';
 import { P, Screen } from '@/components/ui';
-import {
-  api,
-  type Absence,
-  type ChildProfile,
-  type FamilyAbsence,
-  type FeedItem,
-  type TimetableSession,
-} from '@/lib/api';
+import { api, type Absence, type ChildProfile, type FeedItem, type TimetableSession } from '@/lib/api';
 import {
   dayLabel,
   relative,
@@ -27,7 +18,6 @@ import {
   useChildren,
   weekdayName,
 } from '@/lib/hooks';
-import { isCurrent, sortTodos } from '@/lib/todo';
 import { font, onColour, space, useTheme } from '@/lib/theme';
 
 interface Doc {
@@ -36,8 +26,8 @@ interface Doc {
   title?: string;
   item: { id: string; title: string; postedAt: string | null; childId: string | null };
 }
-type Tab = 'updates' | 'timetable' | 'attendance' | 'documents' | 'grades';
-const TABS: Tab[] = ['updates', 'timetable', 'attendance', 'documents', 'grades'];
+type Tab = 'timetable' | 'attendance' | 'documents' | 'grades';
+const TABS: Tab[] = ['timetable', 'attendance', 'documents', 'grades'];
 
 /** Madrid weekday (1 = Monday ... 7 = Sunday) and HH:MM right now. */
 function madridNow() {
@@ -71,7 +61,7 @@ function nextClass(tt: TimetableSession[]) {
   return null;
 }
 
-/** A child's page: profile (teachers, next class, absences), then updates, timetable, attendance, documents, grades. */
+/** A child's page: in short (links to the feed), school, teachers, then timetable, attendance, documents, grades. */
 export default function ChildPage() {
   const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { t, i18n } = useTranslation();
@@ -79,15 +69,18 @@ export default function ChildPage() {
   const kids = useChildren();
   const kid = kids.data?.find((k) => k.id === id);
   const profile = useChildProfile(id);
-  const [tab, setTab] = useState<Tab>(TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'updates');
+  const [tab, setTab] = useState<Tab>(TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'timetable');
   const [q, setQ] = useState('');
   const [allTeachers, setAllTeachers] = useState(false);
-  const [period, setPeriod] = useState<Period>('current');
   const familyAbsences = useAbsences();
 
   const items = useQuery({
     queryKey: ['items', 'child', id],
     queryFn: () => api<{ items: FeedItem[] }>(`/items?limit=60&child_id=${id}`),
+  });
+  const openItems = useQuery({
+    queryKey: ['items', 'needs', id],
+    queryFn: () => api<{ items: FeedItem[] }>(`/items?needs_action=true&limit=100&child_id=${id}`),
   });
   const docs = useQuery({
     queryKey: ['docs', q, id],
@@ -101,24 +94,17 @@ export default function ChildPage() {
   const all = items.data?.items ?? [];
   const monthAgo = Date.now() - 30 * 86400_000;
   const recent = all.filter((i) => i.postedAt && new Date(i.postedAt).getTime() > monthAgo).length;
-  const needs = all.filter((i) => i.action && isCurrent(i));
-  const actions = needs.length;
-  const updates = all.filter((i) => !i.action && i.section !== 'message' && isCurrent(i));
-  const past = all.filter((i) => !isCurrent(i));
-  const openAbsences: FamilyAbsence[] = (familyAbsences.data ?? []).filter(
+  // To-dos and updates live in the family feed (Today); here they are a count that links there.
+  const openAbsences = (familyAbsences.data ?? []).filter(
     (a) => a.status === 'unjustified' && a.child.id === id,
   );
-  const todos = sortTodos([
-    ...needs.map((item) => ({ kind: 'item' as const, item })),
-    ...openAbsences.map((a) => ({ kind: 'absence' as const, a })),
-  ]);
+  const actions = (openItems.data?.items.length ?? 0) + openAbsences.length;
   const absences = p?.absences ?? [];
   const openAbs = absences.filter((a) => a.status === 'unjustified').length;
   const next = useMemo(() => nextClass(p?.timetable ?? []), [p?.timetable]);
   const nextEvent = p?.upcoming[0];
 
   const tabLabel: Record<Tab, string> = {
-    updates: t('cl.child.updates'),
     timetable: t('cl.child.timetable'),
     attendance: t('cl.child.attendance'),
     documents: t('cl.child.documents'),
@@ -196,9 +182,17 @@ export default function ChildPage() {
         >
           {t('cl.child.inShort')}
         </Text>
-        <Text style={{ color: c.ink, fontSize: 17, fontWeight: '600', lineHeight: 23 }}>
-          {t('cl.child.summary', { actions, updates: recent })}
-        </Text>
+        <Pressable
+          onPress={() => router.navigate('/')}
+          accessibilityRole="link"
+          accessibilityHint={t('cl.child.openFeed')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+        >
+          <Text style={{ flex: 1, color: c.ink, fontSize: 17, fontWeight: '600', lineHeight: 23 }}>
+            {t('cl.child.summary', { actions, updates: recent })}
+          </Text>
+          <Text style={{ color: c.accent, fontSize: 20, fontWeight: '700' }}>›</Text>
+        </Pressable>
         {next ? (
           <Line
             icon="clock"
@@ -229,23 +223,6 @@ export default function ChildPage() {
           />
         ) : null}
       </View>
-
-      {todos.length ? (
-        <View style={{ gap: 10 }}>
-          <Text accessibilityRole="header" style={{ color: c.ink, fontSize: 17, fontWeight: '700' }}>
-            {t('cl.needsYou')}
-          </Text>
-          {todos.map((td) =>
-            td.kind === 'item' ? (
-              <NeedsCard key={td.item.id} item={td.item} />
-            ) : (
-              <AbsenceCard key={td.a.id} a={td.a} />
-            ),
-          )}
-        </View>
-      ) : null}
-
-      <ComingUp childId={id} />
 
       <View
         style={{
@@ -352,20 +329,6 @@ export default function ChildPage() {
           </Pressable>
         ))}
       </ScrollView>
-
-      {tab === 'updates' ? (
-        <View style={{ gap: 10 }}>
-          <PeriodToggle value={period} onChange={setPeriod} />
-          {!items.isLoading && !(period === 'current' ? updates : past).length ? (
-            <P muted small>
-              {period === 'current' ? t('cl.child.noUpdates') : t('cl.nothingPast')}
-            </P>
-          ) : null}
-          {(period === 'current' ? updates : past).map((i) => (
-            <ItemCard key={i.id} item={i} />
-          ))}
-        </View>
-      ) : null}
 
       {tab === 'timetable' ? <Timetable p={p} /> : null}
       {tab === 'attendance' ? <Attendance absences={absences} loaded={!!p} /> : null}

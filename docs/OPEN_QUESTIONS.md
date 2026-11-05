@@ -41,3 +41,10 @@ Status key: **[TBD]** discover from the real portal · **[OPEN]** human decision
 - [ASSUMPTION] Co-parents join with can_submit=false; the owner turns it on per person.
 - [OPEN] Bedrock model IDs and region (eu-west-3 default). The direct Anthropic API is refused in production.
 - Migrations are hand-applied SQL (`up`/`down`) generated from the Drizzle schema, because drizzle-kit has no down migrations.
+
+## Starting a new message to a teacher or the school (2026-11-05)
+Recorded so far: parents can only *reply* to a message the school sent with `permetResposta: true`
+(`enviaMissatge.do`, docs/capture/11). No "new message" form has been captured. Next step: one
+human-run look at Missatges (and Reunions) while signed in, structure only, to see whether GestIB
+offers a compose screen and who it can address (tutor, teachers, office). Until then the app offers
+replies (when allowed) and the school phone.

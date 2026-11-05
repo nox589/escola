@@ -143,10 +143,7 @@ async function run(page: Page) {
   }
   await shot(page, '06-today');
 
-  step('Today: Current/Past, then a child chip opens the child page');
-  await page.getByRole('tab', { name: 'Past' }).click();
-  await shot(page, '06a-today-past');
-  await page.getByRole('tab', { name: 'Current' }).click();
+  step('Today feed, then a child chip opens the child page');
   await page.getByRole('button', { name: 'Call school' }).first().waitFor();
   await page.getByRole('button', { name: 'Alumne', exact: true }).first().click();
   await page.getByText('In short').waitFor();
@@ -157,7 +154,6 @@ async function run(page: Page) {
     await page.getByText(/2 absences this year · 1 to justify/).waitFor();
     await page.getByText('1st evaluation').filter({ visible: true }).first().waitFor();
     await shot(page, '06c2-child-profile');
-    await page.getByRole('tab', { name: 'Timetable' }).click();
     await page.getByRole('button', { name: 'Mon' }).click();
     await page.getByText('Catalan').first().waitFor();
     await page.getByText('Llengua catalana').first().waitFor();
@@ -203,7 +199,8 @@ async function run(page: Page) {
   await shot(page, '10-chat-sent');
   await page.goto(APP);
   await page.getByRole('tab', { name: /Messages/ }).click();
-  await page.getByText(/DIRECCIÓ GENERAL/).first().click();
+  await shot(page, '10a-inbox');
+  await page.getByText(/Direcció General/).first().click();
   await page.getByText(/caib\.es\/beques/).first().waitFor({ timeout: 15_000 });
   await shot(page, '10b-chat-long-sender');
 
