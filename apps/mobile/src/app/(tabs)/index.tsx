@@ -37,7 +37,8 @@ export default function Today() {
   const needs = items
     .filter((i) => i.action)
     .sort((a, b) => (a.action!.deadlineAt ?? '9').localeCompare(b.action!.deadlineAt ?? '9'));
-  const rest = items.filter((i) => !i.action);
+  // Conversations live in Messages; Today keeps what needs action plus circulars, notices and activities.
+  const rest = items.filter((i) => !i.action && i.section !== 'message');
   const selected = kids.data?.find((k) => k.id === child);
 
   const account = summary.data?.accounts[0];

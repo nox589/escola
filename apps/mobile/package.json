@@ -7,6 +7,7 @@
     "@expo/metro-runtime": "~58.0.17",
     "@tanstack/react-query": "^5.105.3",
     "expo": "~58.0.23",
+    "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.15",
     "expo-device": "~58.0.5",
     "expo-linking": "~58.0.16",

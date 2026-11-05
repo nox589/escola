@@ -141,6 +141,7 @@ export interface FeedItem {
   sender: string | null;
   postedAt: string | null;
   read: boolean;
+  attachments?: number;
   action: Action | null;
 }
 export interface ItemDetail {
@@ -232,4 +233,29 @@ export interface ChildProfile {
 }
 export interface FamilyAbsence extends Absence {
   child: { id: string; name: string; colour: string | null };
+}
+
+export interface Thread {
+  key: string;
+  sender: string | null;
+  children: { id: string; name: string; colour: string | null }[];
+  count: number;
+  unread: number;
+  lastAt: string | null;
+  lastTitle: string;
+  lastSummary: string | null;
+}
+export interface ThreadDetail {
+  key: string;
+  sender: string | null;
+  messages: {
+    id: string;
+    child: { id: string; name: string; colour: string | null } | null;
+    postedAt: string | null;
+    read: boolean;
+    title: string;
+    body: string | null;
+    original: { title: string; body: string; lang: string };
+  }[];
+  replies: { id: string; itemId: string | null; state: string; text: string; sentText: string | null; createdAt: string }[];
 }

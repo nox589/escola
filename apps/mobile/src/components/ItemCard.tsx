@@ -43,6 +43,12 @@ export function ItemCard({ item }: { item: FeedItem }) {
           {item.summary}
         </Text>
       ) : null}
+      {item.attachments ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: c.accentSoft, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+          <Icon name="clip" size={14} color={c.accent} />
+          <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>{t('cl.attachments', { count: item.attachments })}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

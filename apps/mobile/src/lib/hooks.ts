@@ -1,5 +1,5 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { api, type Child, type ChildProfile, type FamilyAbsence, type Me, type PortalAccount, type Summary, type TimetableSession } from './api';
+import { api, type Child, type ChildProfile, type FamilyAbsence, type Me, type PortalAccount, type Summary, type Thread, type TimetableSession } from './api';
 import { useAuth } from './auth';
 
 export const useMe = () => {
@@ -36,6 +36,9 @@ export function weekdayName(day: number, locale: string, style: 'long' | 'short'
   return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { weekday: style }).format(ref);
 }
 
+export const useThreads = () =>
+  useQuery({ queryKey: ['threads'], queryFn: () => api<Thread[]>('/threads'), refetchInterval: 120_000 });
+
 export const useConsents = () =>
   useQuery({ queryKey: ['consents'], queryFn: () => api<{ kind: string; version: string }[]>('/consents') });
 
@@ -61,3 +64,12 @@ export function shortDate(iso: string, locale: string): string {
 }
 
 export const CONSENT_VERSION = '2026-11-1';
+
+/** Same key the API uses for a sender's conversation (base64url of the sender, or 'school'). */
+export function threadKeyOf(sender: string | null): string {
+  if (!sender) return 'school';
+  const bytes = new TextEncoder().encode(sender);
+  let bin = '';
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}

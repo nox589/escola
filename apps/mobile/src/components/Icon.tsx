@@ -12,6 +12,8 @@ export type IconName =
   | 'check'
   | 'send'
   | 'alert'
+  | 'mail'
+  | 'clip'
   | 'sparkle';
 
 /** Stroke icons drawn to match the clases mockup. Decorative unless given a label by the parent. */
@@ -59,6 +61,13 @@ export function Icon({ name, size = 22, color = '#203B39', strokeWidth = 2 }: { 
         </>
       ) : name === 'check' ? (
         <Path d="m5 12 5 5 9-10" {...p} />
+      ) : name === 'mail' ? (
+        <>
+          <Path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" {...p} />
+          <Path d="m3.5 7 8.5 6 8.5-6" {...p} />
+        </>
+      ) : name === 'clip' ? (
+        <Path d="M20 11.5 12.4 19a5 5 0 0 1-7.1-7.1l7.8-7.8a3.3 3.3 0 0 1 4.7 4.7l-7.8 7.8a1.7 1.7 0 0 1-2.4-2.4l7.1-7.1" {...p} />
       ) : name === 'alert' ? (
         <>
           <Circle cx={12} cy={12} r={9} {...p} />

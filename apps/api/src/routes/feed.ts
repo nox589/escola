@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, lte, or, schema, sql } from '@escola/db';
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lt, lte, or, schema, sql } from '@escola/db';
 import { ACTION_STATES, itemsQuery } from '@escola/shared';
 import type { AppDeps } from '../context.js';
 import { fam, HttpError, me } from '../app.js';
@@ -72,6 +72,14 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
 
       const page = rows.slice(0, q.limit);
       const last = page.at(-1);
+      const ids = page.map((r) => r.item.id);
+      const attCounts = new Map<string, number>();
+      if (ids.length)
+        for (const a of await db
+          .select({ itemId: schema.attachments.itemId })
+          .from(schema.attachments)
+          .where(inArray(schema.attachments.itemId, ids)))
+          attCounts.set(a.itemId, (attCounts.get(a.itemId) ?? 0) + 1);
       return {
         items: page.map(({ item, child, tr, action }) => ({
           id: item.id,
@@ -85,6 +93,7 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
           sender: item.sender,
           postedAt: item.postedAt?.toISOString() ?? null,
           read: !!(item.isReadBy as Record<string, boolean>)[p.userId],
+          attachments: attCounts.get(item.id) ?? 0,
           action: action
             ? {
                 id: action.id,
@@ -97,6 +106,92 @@ export async function feedRoutes(app: FastifyInstance, deps: AppDeps) {
         nextCursor: rows.length > q.limit && last ? encodeCursor(last.item.postedAt, last.item.id) : null,
       };
     });
+  });
+
+  // ---- Messages: conversations grouped by sender (teacher / office) ----
+  const threadKey = (sender: string | null) => Buffer.from(sender ?? '', 'utf8').toString('base64url') || 'school';
+  const senderOf = (key: string) => (key === 'school' ? null : Buffer.from(key, 'base64url').toString('utf8'));
+
+  async function loadMessages(req: Parameters<typeof me>[0], sender?: string | null) {
+    const p = me(req);
+    const locale = await userLocale(deps, p.userId);
+    return fam(deps, req, async (db) => {
+      const rows = await db
+        .select({ item: schema.items, child: { id: schema.children.id, name: schema.children.displayName, colour: schema.children.colour }, tr: schema.itemTranslations })
+        .from(schema.items)
+        .leftJoin(schema.children, eq(schema.children.id, schema.items.childId))
+        .leftJoin(schema.itemTranslations, and(eq(schema.itemTranslations.itemId, schema.items.id), eq(schema.itemTranslations.lang, locale)))
+        .where(
+          and(
+            eq(schema.items.section, 'message'),
+            sender === undefined ? undefined : sender === null ? isNull(schema.items.sender) : eq(schema.items.sender, sender),
+          ),
+        )
+        .orderBy(sql`${schema.items.postedAt} ASC NULLS FIRST`, asc(schema.items.id))
+        .limit(500);
+      const ids = rows.map((r) => r.item.id);
+      const replies = ids.length
+        ? await db
+            .select()
+            .from(schema.submissions)
+            .where(and(eq(schema.submissions.kind, 'reply_message'), inArray(schema.submissions.itemId, ids)))
+            .orderBy(asc(schema.submissions.createdAt))
+        : [];
+      return { rows, replies, userId: p.userId };
+    });
+  }
+
+  app.get('/threads', auth, async (req) => {
+    const { rows, userId } = await loadMessages(req);
+    const by = new Map<string, { key: string; sender: string | null; children: Map<string, { id: string; name: string; colour: string | null }>; last: (typeof rows)[number]; unread: number; count: number }>();
+    for (const r of rows) {
+      const key = threadKey(r.item.sender);
+      const t = by.get(key) ?? { key, sender: r.item.sender, children: new Map(), last: r, unread: 0, count: 0 };
+      if (r.child?.id) t.children.set(r.child.id, r.child as { id: string; name: string; colour: string | null });
+      t.last = r;
+      t.count++;
+      if (!(r.item.isReadBy as Record<string, boolean>)[userId]) t.unread++;
+      by.set(key, t);
+    }
+    return [...by.values()]
+      .map((t) => ({
+        key: t.key,
+        sender: t.sender,
+        children: [...t.children.values()],
+        count: t.count,
+        unread: t.unread,
+        lastAt: t.last.item.postedAt?.toISOString() ?? null,
+        lastTitle: t.last.tr?.title ?? t.last.item.originalTitle,
+        lastSummary: t.last.tr?.summary ?? null,
+      }))
+      .sort((a, b) => (b.lastAt ?? '').localeCompare(a.lastAt ?? ''));
+  });
+
+  app.get('/threads/:key', auth, async (req) => {
+    const { key } = z.object({ key: z.string().min(1).max(400) }).parse(req.params);
+    const { rows, replies, userId } = await loadMessages(req, senderOf(key));
+    if (!rows.length) throw new HttpError(404, 'not_found');
+    return {
+      key,
+      sender: rows[0]!.item.sender,
+      messages: rows.map(({ item, child, tr }) => ({
+        id: item.id,
+        child: child?.id ? child : null,
+        postedAt: item.postedAt?.toISOString() ?? null,
+        read: !!(item.isReadBy as Record<string, boolean>)[userId],
+        title: tr?.title ?? item.originalTitle,
+        body: tr?.body ?? null,
+        original: { title: item.originalTitle, body: item.originalBodyText, lang: item.originalLang ?? 'ca' },
+      })),
+      replies: replies.map((s) => ({
+        id: s.id,
+        itemId: s.itemId,
+        state: s.state,
+        text: String((s.userInput as { text?: string }).text ?? ''),
+        sentText: s.draftOriginal,
+        createdAt: s.createdAt.toISOString(),
+      })),
+    };
   });
 
   app.get('/items/:id', auth, async (req) => {

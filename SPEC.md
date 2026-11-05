@@ -258,7 +258,20 @@ Flow:
 
 ## 11. Screens (wireframe descriptions)
 
-1. **Welcome** – logo, one line "School messages, in your language", language picker, Continue.
+### 11.0 Information architecture (founder decision, 2026-11-05; supersedes the tab layout below)
+
+Three bottom tabs plus a page per child. Everything shows in the parent's language with the original one tap away (golden rule 5).
+
+**Rule:** anything needing action goes on **Today**, conversations go in **Messages**, time goes in **Week**. GestIB's other sections become labels on items, not menus.
+
+- **Today (home):** child chips (All / each child). "Needs you" cards (sign a slip, justify an absence, reply to a teacher), each with one big button and a deadline. Updates (circulars, notices, activities), one-line summary each with the PDF attached. Messages that need no action live in Messages, not here.
+- **Messages:** WhatsApp-style. One conversation per teacher or office, unread badges on the tab and rows, push notifications open straight into the chat. Reply: type in your language, see the polite Catalan version and its back-translation, then tap Send. Until the reply writer is verified on the real portal, Send is replaced by "Copy text" and "Open in GestIB" (drafting stays available).
+- **Week:** a seven-day strip in each child's colour; each day shows classes (from the timetable), trips, evaluations, holidays and deadlines.
+- **Child page** (tap a child): summary line, teachers (from the timetable), next class, timetable, attendance history, grades and assessments (translated, with a plain-language line at the top and a past-years switch once grades are captured), all documents searchable.
+- **Always available:** an Ask bar at the top of every main screen; Settings for the GestIB connection, language, quiet hours and co-parents.
+- **Before sign-in:** the Welcome screen (language, three promises, Get started) links to the **Parent guide**: getting a GestIB account, working out the username (`e` + DNI/NIE in lowercase, computed on the device only), resetting a forgotten password (24-hour window), password rules, common problems, who to contact. GestIB's own button labels stay in Catalan in every language. The guide is also linked from the Link GestIB screen.
+
+1. **Welcome** – full-bleed teal, light wordmark, "All of GestIB. None of the chaos.", language picker, three promises, Get started, "Need your GestIB password?" (guide), "Private by design. Not affiliated with CAIB."
 2. **Sign up** – Apple / Google / email magic link.
 3. **Consent** – plain-language cards: what we access, mandate to read, (separate) mandate to submit on your instruction, AI processing, data location EU; checkboxes, links to ToS/Privacy.
 4. **Link GestIB** – username, password (show/hide), help "Use the username/password login, not Cl@ve", security note; on submit → "Checking… (we try once)"; result states.

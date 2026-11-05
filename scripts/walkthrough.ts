@@ -83,9 +83,18 @@ async function run(page: Page) {
 
   step('welcome');
   await page.goto(APP);
-  await page.getByText('School messages, in your language').waitFor();
+  await page.getByText(/All of GestIB/).waitFor();
   await shot(page, '01-welcome');
-  await page.getByRole('button', { name: 'Continue' }).click();
+
+  step('password guide before signing in');
+  await page.getByText('Need your GestIB password?').click();
+  await page.getByText("What's my username?").click();
+  await page.getByLabel('Your DNI or NIE').fill('1234567K');
+  await page.getByText('e1234567k').waitFor();
+  await page.getByText('I forgot my password').click();
+  await page.getByText('Open GestIB password reset').waitFor();
+  await shot(page, '01b-guide');
+  await page.getByRole('button', { name: 'I have my username and password' }).click();
 
   step('sign in with magic link');
   await page.getByLabel('Email').fill(`anna+${Date.now()}@example.test`);
@@ -167,16 +176,19 @@ async function run(page: Page) {
   await shot(page, '08-item-original');
   await page.goBack();
 
-  step('reply to school with preview + confirm');
+  step('Messages tab: chat, translate, send');
+  await page.goto(APP);
+  await page.getByRole('tab', { name: /Messages/ }).click();
   await page.getByText('[en] Reunió de tutoria').first().click();
-  await page.getByRole('button', { name: 'Reply to school' }).click();
-  await page.getByLabel('Your message').fill('Thank you, Tuesday at 16:00 works for us.');
-  await page.getByRole('button', { name: 'Prepare' }).click();
-  await page.getByText('Exactly what the school receives').first().waitFor();
-  await shot(page, '09-reply-preview');
-  await page.getByRole('button', { name: 'Confirm and send' }).click();
-  await page.getByRole('heading', { name: 'Sent ✓' }).waitFor({ timeout: 60_000 });
-  await shot(page, '10-submission-sent');
+  await page.getByText(/Show original/).first().waitFor();
+  await page.getByPlaceholder('Write in English').fill('Thank you, Tuesday at 16:00 works for us.');
+  await page.getByRole('button', { name: 'Translate' }).click();
+  await page.getByText('The school will receive').waitFor();
+  await page.getByText('Back-translation').waitFor();
+  await shot(page, '09-chat-preview');
+  await page.getByRole('button', { name: 'Send to school' }).click();
+  await page.getByText(/Delivered/).waitFor({ timeout: 90_000 });
+  await shot(page, '10-chat-sent');
 
   step('Week tab');
   await page.goto(APP);

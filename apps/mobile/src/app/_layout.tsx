@@ -64,6 +64,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
+          <Stack.Screen name="guide" options={{ headerShown: false }} />
           <Stack.Screen name="sign-in" options={{ title: '' }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen name="consent" options={{ headerShown: false }} />
@@ -75,6 +76,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="item/[id]" options={{ title: '' }} />
           <Stack.Screen name="child/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="thread/[key]" options={{ headerShown: false }} />
           <Stack.Screen name="assistant" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="documents" options={{ headerShown: false }} />

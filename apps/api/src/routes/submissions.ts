@@ -97,7 +97,9 @@ export async function submissionRoutes(app: FastifyInstance, deps: AppDeps) {
 
   app.post('/submissions', auth, async (req) => {
     const body = createSubmissionRequest.parse(req.body);
-    if (!enabled().has(body.kind)) throw new HttpError(409, 'kind_not_enabled');
+    // Replies can always be drafted (translation + back-translation preview, to copy into GestIB);
+    // sending is refused at confirm until the writer is switched on. Other kinds need the writer.
+    if (!enabled().has(body.kind) && body.kind !== 'reply_message') throw new HttpError(409, 'kind_not_enabled');
     const input = inputSchemas[body.kind].parse(body.user_input) as Record<string, unknown>;
     const p = me(req);
     const [user] = await asApp(deps.pool, (db) =>
@@ -233,6 +235,10 @@ export async function submissionRoutes(app: FastifyInstance, deps: AppDeps) {
     const { preview_hash } = confirmSubmissionRequest.parse(req.body);
     const p = me(req);
     if (!p.canSubmit) throw new HttpError(403, 'not_allowed_to_submit');
+    const [pending] = await fam(deps, req, (db) =>
+      db.select({ kind: schema.submissions.kind }).from(schema.submissions).where(eq(schema.submissions.id, id)),
+    );
+    if (pending && !enabled().has(pending.kind)) throw new HttpError(409, 'kind_not_enabled');
     const mandate = await asApp(deps.pool, (db) =>
       db
         .select()

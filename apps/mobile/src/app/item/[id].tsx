@@ -7,7 +7,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Badge, Banner, Button, Card, Divider, H1, Loading, P, Row, Screen } from '@/components/ui';
 import { LANG_NAMES } from '@/i18n';
 import { api, type ItemDetail } from '@/lib/api';
-import { shortDate } from '@/lib/hooks';
+import { shortDate, threadKeyOf } from '@/lib/hooks';
 import { font, space, useTheme } from '@/lib/theme';
 
 /** SPEC §11 screen 8. Golden rule 5: the original is always one tap away (and shown first if untranslated). */
@@ -30,7 +30,13 @@ export default function Item() {
       );
   }, [id, qc]);
 
-  if (!q.data) return <Loading />;
+  // Messages live in the Messages tab as conversations (push notifications land here too).
+  useEffect(() => {
+    if (q.data?.section === 'message')
+      router.replace({ pathname: '/thread/[key]', params: { key: threadKeyOf(q.data.sender) } });
+  }, [q.data]);
+
+  if (!q.data || q.data.section === 'message') return <Loading />;
   const it = q.data;
   const tr = it.translation;
   const original = showOriginal || !tr;

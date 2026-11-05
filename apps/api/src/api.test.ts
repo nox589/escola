@@ -297,6 +297,14 @@ d('API', () => {
       })
     ).json();
     expect(cal[0]).toMatchObject({ title: 'Meeting', kind: 'deadline', child: { name: 'Maya' } });
+
+    // Messages tab: one conversation per sender, original next to the translation; other families see none.
+    const threads = (await app.inject({ url: '/v1/threads', headers: as(A.accessToken) })).json();
+    expect(threads).toHaveLength(1);
+    expect(threads[0]).toMatchObject({ count: 1, unread: 0, lastTitle: 'Meeting', children: [{ name: 'Maya' }] });
+    const thread = (await app.inject({ url: `/v1/threads/${threads[0].key}`, headers: as(A.accessToken) })).json();
+    expect(thread.messages[0]).toMatchObject({ body: 'We propose a meeting.', original: { body: 'Us proposam una reunió.' } });
+    expect((await app.inject({ url: '/v1/threads', headers: as(B.accessToken) })).json()).toEqual([]);
   });
 
   it('reception: preview hash, submit mandate, edit invalidates, confirm queues exactly once', async () => {
